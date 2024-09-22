@@ -1,0 +1,28 @@
+body {
+  font-family: Arial, sans-serif;
+  padding: 10px;
+}
+
+h1 {
+  font-size: 18px;
+}
+
+button {
+  padding: 10px;
+  font-size: 14px;
+}
+
+.tooltip {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent black background */
+  color: #fff;
+  padding: 5px;
+  border-radius: 5px;
+  display: none;
+  z-index: 1000;
+  pointer-events: none; /* Prevents the tooltip from interfering with mouse events */
+}
+
+.tooltip-activepokemon {
+  background-color: #9f27ba; /* Replace #yourColor with the desired background color */
+}

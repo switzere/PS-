@@ -1,0 +1,36 @@
+{
+    "manifest_version": 3,
+    "name": "Pokemon Showdown Addon",
+    "version": "1.0",
+    "description": "An addon for Pokemon Showdown",
+    "permissions": [
+      "activeTab",
+      "storage"
+    ],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["*://play.pokemonshowdown.com/*"],
+        "js": ["content.js"]
+      }
+    ],
+    "web_accessible_resources": [
+      {
+        "resources": ["tooltip.js"],
+        "matches": ["*://play.pokemonshowdown.com/*"]
+      }
+    ],
+    "action": {
+      "default_popup": "tooltip.html",
+      "default_icon": {
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+      }
+    },
+    "icons": {
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  }
