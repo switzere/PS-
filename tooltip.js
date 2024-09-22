@@ -61,6 +61,11 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
   text += Dex.getTypeIcon(moveType);
   text += ` ${Dex.getCategoryIcon(category)}</h2>`;
 
+  //(stat: StatName, set: PokemonSet, evOverride?: number, natureOverride?: number)
+  PokemonSet 
+  pokemon.getStat(atk, pokemon, 84, natureOverride) {
+
+
   // Get the stats of both Pokémon
   let activePokemonStats = this.calculateModifiedStats(pokemon, serverPokemon);
   console.log(activePokemonStats);
