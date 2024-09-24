@@ -5,6 +5,27 @@ const originalShowPokemonTooltip = BattleTooltips.prototype.showPokemonTooltip;
 
 const originalShowMoveTooltip = BattleTooltips.prototype.showMoveTooltip;
 
+//serverPokemon exists when it's the users Pokemon
+//clientPokemon always exists
+
+function calculateStats(pokemon, level) {
+  //gets the stats of the pokemon, then using the base stats, evs, level, and nature, calculates the actual stats
+  let baseStats = pokemon.baseStats;
+  let evs = 84;
+  let ivs = 31;
+  let stats = {};
+
+  for (let stat in baseStats) {
+    if (stat === 'hp') {
+      stats[stat] = Math.floor(0.01 * (2 * baseStats[stat] + ivs + Math.floor(evs / 4)) * level + level + 10);
+    }
+    else {
+      stats[stat] = Math.floor(0.01 * (2 * baseStats[stat] + ivs + Math.floor(evs / 4)) * level + 5);
+    }
+  }
+
+  return stats;
+}
 
 ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientPokemon, serverPokemon, isActive, illusionIndex) {
   // Call the original method
@@ -20,28 +41,26 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
     text += '<p><small>Spe</small> ' + max + ' <small>(before items/abilities/modifiers)</small></p>';
   }
 
-  // console.log(clientPokemon.stats)
-  // let stats = {...serverPokemon.stats};
-  // console.log(stats);
-	// let pokemon = clientPokemon || serverPokemon;
-  // console.log(pokemon);
+  if (!serverPokemon) {
+    if (!clientPokemon) throw new Error('Must pass either clientPokemon or serverPokemon');
+    console.log(clientPokemon.name);
+    // Use the getBaseSpecies method
+    let baseSpecies = clientPokemon.getBaseSpecies();
+    //let baseStats = baseSpecies.baseStats;
+    let stats = calculateStats(baseSpecies, clientPokemon.level);
 
-  // const pokemon = clientPokemon || serverPokemon;
-  // console.log(pokemon);
-  //   if (!pokemon) {
-  //     const stats = clientPokemon?.stats || serverPokemon?.stats || {};
-  //     console.log(stats);
-  //     if (!stats) {
-  //       text += `
-  //         <p><small>HP:</small> ${stats.hp}</p>
-  //         <p><small>Atk:</small> ${stats.atk}</p>
-  //         <p><small>Def:</small> ${stats.def}</p>
-  //         <p><small>SpA:</small> ${stats.spa}</p>
-  //         <p><small>SpD:</small> ${stats.spd}</p>
-  //         <p><small>Spe:</small> ${stats.spe}</p>
-  //       `;
-  //     }
-  //   }
+    text += '<p><small>Base Stats</small></p>';
+    let buf = '';
+    for (const statName of Object.keys(stats)) {
+      if (this.battle.gen === 1 && statName === 'spd') continue;
+      let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
+      buf += statName === 'atk' ? '<small>' : '<small> / ';
+      buf += '' + BattleText[statLabel].statShortName + '&nbsp;</small>';
+      buf += '' + stats[statName];
+    }
+    text += buf;
+  }
+
 
   return text;//originalContent+"<img src=\"https://play.pokemonshowdown.com/sprites/types/Fairy.png\" alt=\"Fairy\" height=\"14\" width=\"32\" class=\"pixelated\" />";
 }
@@ -62,8 +81,8 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
   text += ` ${Dex.getCategoryIcon(category)}</h2>`;
 
   //(stat: StatName, set: PokemonSet, evOverride?: number, natureOverride?: number)
-  PokemonSet 
-  pokemon.getStat(atk, pokemon, 84, natureOverride) {
+  //PokemonSet 
+  //pokemon.getStat(atk, pokemon, 84, natureOverride) {
 
 
   // Get the stats of both Pokémon
