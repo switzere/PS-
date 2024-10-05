@@ -81,16 +81,26 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
     //let baseStats = baseSpecies.baseStats;
     let stats = calculateStats(baseSpecies, clientPokemon.level);
 
-    text += '<p><small>Base Stats</small></p>';
-    let buf = '';
+    let buf = '<p>';
     for (const statName of Object.keys(stats)) {
       if (this.battle.gen === 1 && statName === 'spd') continue;
+      if (statName === 'hp') continue;
       let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
       buf += statName === 'atk' ? '<small>' : '<small> / ';
       buf += '' + BattleText[statLabel].statShortName + '&nbsp;</small>';
       buf += '' + stats[statName];
+      //if (modifiedStats[statName] !== stats[statName]) hasModifiedStat = true;
     }
+    buf += '</p>';
     text += buf;
+    // for (const statName of Object.keys(stats)) {
+    //   if (this.battle.gen === 1 && statName === 'spd') continue;
+    //   let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
+    //   buf += statName === 'atk' ? '<small>' : '<small> / ';
+    //   buf += '' + BattleText[statLabel].statShortName + '&nbsp;</small>';
+    //   buf += '' + stats[statName];
+    // }
+    // text += buf;
   }
 
 
