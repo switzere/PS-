@@ -1,3 +1,0 @@
-1. Modified stats
-2. Modified damage of attacks
-3. Green/Red text of opponent stats

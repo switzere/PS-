@@ -158,44 +158,24 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
 
   text += '<hr style="border: 1px solid black; margin: 5px 0;">';
 
-  text += '<h2>' + move.name + '<br />';
+  // text += '<h2>' + move.name + '<br />';
 
-  text += Dex.getTypeIcon(moveType);
-  text += ` ${Dex.getCategoryIcon(category)}</h2>`;
+  // text += Dex.getTypeIcon(moveType);
+  // text += ` ${Dex.getCategoryIcon(category)}</h2>`;
 
   console.log(pokemon.side.foe.active[0].name);
   // Use the getBaseSpecies method
   let foePokemonBaseSpecies = pokemon.side.foe.active[0].getBaseSpecies();
   //let baseStats = baseSpecies.baseStats;
   let foeStats = calculateStats(foePokemonBaseSpecies, pokemon.side.foe.active[0].level);
-
-  text += '<p><small>Base Stats</small></p>';
-  let buf = '';
-  for (const statName of Object.keys(foeStats)) {
-    if (this.battle.gen === 1 && statName === 'spd') continue;
-    let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
-    buf += statName === 'atk' ? '<small>' : '<small> / ';
-    buf += '' + BattleText[statLabel].statShortName + '&nbsp;</small>';
-    buf += '' + foeStats[statName];
-  }
-  text += buf;
+  foeStats = boostStats(foeStats, pokemon.side.foe.active[0].boosts);
 
   console.log(pokemon.side.active[0].name);
   // Use the getBaseSpecies method
   let activePokemonBaseSpecies = pokemon.side.active[0].getBaseSpecies();
   //let baseStats = baseSpecies.baseStats;
   let activeStats = calculateStats(activePokemonBaseSpecies, pokemon.side.active[0].level);
-
-  text += '<p><small>Base Stats</small></p>';
-  buf = '';
-  for (const statName of Object.keys(activeStats)) {
-    if (this.battle.gen === 1 && statName === 'spd') continue;
-    let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
-    buf += statName === 'atk' ? '<small>' : '<small> / ';
-    buf += '' + BattleText[statLabel].statShortName + '&nbsp;</small>';
-    buf += '' + activeStats[statName];
-  }
-  text += buf + '<br />';
+  activeStats = boostStats(activeStats, pokemon.side.active[0].boosts);
 
   let damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, pokemon.side.active[0].level);
   //turn into percentage
