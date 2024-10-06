@@ -65,6 +65,20 @@ function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, 
 
 }
 
+function boostStats(stats, boosts) {
+  let modifiedStats = {};
+  for (let stat in stats) {
+    modifiedStats[stat] = stats[stat];
+    if (boosts[stat] > 0) {
+      modifiedStats[stat] = Math.floor(stats[stat] * (2 + boosts[stat]) / 2);
+    }
+    else if (boosts[stat] < 0) {
+      modifiedStats[stat] = Math.floor(stats[stat] * 2 / (2 + Math.abs(boosts[stat])));
+    }
+  }
+  return modifiedStats;
+}
+
 ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientPokemon, serverPokemon, isActive, illusionIndex) {
   // Call the original method
   let text = originalShowPokemonTooltip.call(this, clientPokemon, serverPokemon, isActive, illusionIndex);
@@ -80,8 +94,12 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
     let baseSpecies = clientPokemon.getBaseSpecies();
     //let baseStats = baseSpecies.baseStats;
     let stats = calculateStats(baseSpecies, clientPokemon.level);
+    let boosts = clientPokemon.boosts;
+
+    let modifiedStats = boostStats(stats, boosts);
 
     let buf = '<p>';
+
     for (const statName of Object.keys(stats)) {
       if (this.battle.gen === 1 && statName === 'spd') continue;
       if (statName === 'hp') continue;
@@ -91,6 +109,29 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
       buf += '' + stats[statName];
       //if (modifiedStats[statName] !== stats[statName]) hasModifiedStat = true;
     }
+
+    buf += '</p>';
+
+    //if the stats were modified
+    if (clientPokemon.boosts) {
+      buf += '<p><small>(After stat modifiers:)</small></p>';
+      buf += '<p>';
+      for (const statName of Object.keys(modifiedStats)) {
+        if (this.battle.gen === 1 && statName === 'spd') continue;
+        if (statName === 'hp') continue;
+        let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
+        buf += statName === 'atk' ? '<small>' : '<small> / ';
+        buf += '' + BattleText[statLabel].statShortName + '&nbsp;</small>';
+        if (modifiedStats[statName] === stats[statName]) {
+          buf += '' + modifiedStats[statName];
+        } else if (modifiedStats[statName] < stats[statName]) {
+          buf += '<strong class="stat-lowered">' + modifiedStats[statName] + '</strong>';
+        } else if (modifiedStats[statName] > stats[statName]) {
+          buf += '<strong class="stat-boosted">' + modifiedStats[statName] + '</strong>';
+        }
+      }
+    }
+
     buf += '</p>';
     text += buf;
     // for (const statName of Object.keys(stats)) {
