@@ -5,6 +5,30 @@ const originalShowPokemonTooltip = BattleTooltips.prototype.showPokemonTooltip;
 
 const originalShowMoveTooltip = BattleTooltips.prototype.showMoveTooltip;
 
+let randSets = {};
+
+// Fetch JSON data from the URL
+fetch('https://raw.githubusercontent.com/pkmn/randbats/main/data/gen9randombattle.json')
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok ' + response.statusText);
+    }
+    return response.json();
+  })
+  .then(data => {
+    console.log(data); // Process the JSON data as needed
+    
+    randSets = data;
+  })
+  .catch(error => {
+    console.error('There has been a problem with your fetch operation:', error);
+  });
+
+
+//**************************************************/
+// HELPER FUNCTIONS //
+//**************************************************/
+
 //serverPokemon exists when it's the users Pokemon
 //clientPokemon always exists
 
@@ -60,9 +84,6 @@ function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, 
   let damageCeiling = ((((2 * level)/5 + 2) * move.basePower * (attacker/defender)) / 50 + 2) * 1 * typeEffectiveness * stab;
 
   return [damageFloor, damageCeiling]; // Return damage range as an array
-
-
-
 }
 
 function boostStats(stats, boosts) {
@@ -78,6 +99,11 @@ function boostStats(stats, boosts) {
   }
   return modifiedStats;
 }
+
+
+//**************************************************/
+// OVERRIDING TOOLTIP FUNCTIONS //
+//**************************************************/
 
 ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientPokemon, serverPokemon, isActive, illusionIndex) {
   // Call the original method
@@ -133,7 +159,14 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
     }
 
     buf += '</p>';
+
+    buf += '<p>';
+    buf += JSON.stringify(randSets[baseSpecies.name]);
+    buf += '</p>';
+
+
     text += buf;
+
     // for (const statName of Object.keys(stats)) {
     //   if (this.battle.gen === 1 && statName === 'spd') continue;
     //   let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
@@ -550,6 +583,7 @@ const typeEffectivenessChart = {
     "Fairy": 1
   }
 };
+
 
 BattleTooltips.prototype.showPokemonTooltip = ShowdownEnhancedTooltip.showPokemonTooltip;
 BattleTooltips.prototype.showMoveTooltip = ShowdownEnhancedTooltip.showMoveTooltip;
