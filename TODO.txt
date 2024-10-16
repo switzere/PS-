@@ -1,0 +1,8 @@
+if no opposing pokemon still show normal tooltip
+settings dropdown to turn on/off things
+tera-types should have type colours
+add in statuses to stats (para=speed, burn=atk)
+
+
+A shown move/ability/item should show up green
+An impossible set should be greyed out

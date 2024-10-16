@@ -51,9 +51,11 @@ function calculateStats(pokemon, level) {
   return stats;
 }
 
-function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, level) {
+function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, activePokemon, foeActivePokemon) {
   //gets the damage of the move, then using the base power, attacker's attack, defender's defense, and the level, calculates the damage
   if (move.basePower === 0) return [0, 0];
+
+  let level = activePokemon.level;
 
   //calculate the damage, we have the stats, the base power, level, and type
   let attacker = 0;
@@ -68,14 +70,25 @@ function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, 
 
   let activeType1 = activePokemonBaseSpecies.types[0];
   let activeType2 = activePokemonBaseSpecies.types[1];
+  let terraType = activePokemon.terastallized;
 
-  let foeType1 = foePokemonBaseSpecies.types[0];
-  let foeType2 = foePokemonBaseSpecies.types[1];
+  let foeTerraType = foeActivePokemon.terastallized;
+
+  let foeType1 = "";
+  let foeType2 = "";
+
+  if (foeTerraType) {
+    foeType1 = foeTerraType;
+  }
+  else {
+    foeType1 = foePokemonBaseSpecies.types[0];
+    foeType2 = foePokemonBaseSpecies.types[1];
+  }
 
   // Use typeEffectivenessChart to calculate type effectiveness
   let typeEffectiveness = typeEffectivenessChart[move.type][foeType1] * (foeType2 ? typeEffectivenessChart[move.type][foeType2] : 1);
 
-  let stab = move.type === activeType1 || move.type === activeType2 ? 1.5 : 1;
+  let stab = move.type === activeType1 || move.type === activeType2 || move.type === terraType ? 1.5 : 1;
 
   // damage floor
   let damageFloor = ((((2 * level)/5 + 2) * move.basePower * (attacker/defender)) / 50 + 2) * 0.85 * typeEffectiveness * stab;
@@ -160,9 +173,77 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
 
     buf += '</p>';
 
+    let sets = randSets[baseSpecies.name]
+    //if sets are undefined
+    if (!sets) {
+      sets = randSets[baseSpecies.baseSpecies];
+    }
+
+
+
+    // "abilities": [
+    //             "Wind Rider"
+    //         ],
+    //         "items": [
+    //             "Heavy-Duty Boots",
+    //             "Life Orb"
+    //         ],
+    //         "teraTypes": [
+    //             "Dark",
+    //             "Poison"
+    //         ],
+    //         "moves": [
+    //             "Defog",
+    //             "Knock Off",
+    //             "Leaf Storm",
+    //             "Sucker Punch",
+    //             "Will-O-Wisp"
+    //         ]
     buf += '<p>';
-    buf += JSON.stringify(randSets[baseSpecies.name]);
+    for (const roleName in sets['roles']) {
+        const role = sets['roles'][roleName];
+        buf += '<p>';
+        buf += `<strong>${roleName}</strong><br>`;
+        buf += `Abilities: ${role["abilities"].join(', ')}<br>`;
+        buf += `Items: ${role["items"].join(', ')}<br>`;
+        buf += `Tera Types: ${role["teraTypes"].join(', ')}<br>`;
+        buf += `Moves: `;
+
+        for (const moveName of role["moves"]) {
+          let move = this.battle.dex.moves.get(moveName);
+
+          let foePokemonBaseSpecies = clientPokemon.side.foe.active[0].getBaseSpecies();
+          //let baseStats = baseSpecies.baseStats;
+          let foeStats = calculateStats(foePokemonBaseSpecies, clientPokemon.side.foe.active[0].level);
+          foeStats = boostStats(foeStats, clientPokemon.side.foe.active[0].boosts);
+        
+          console.log(clientPokemon.side.active[0].name);
+          // Use the getBaseSpecies method
+          let activePokemonBaseSpecies = clientPokemon.side.active[0].getBaseSpecies();
+          //let baseStats = baseSpecies.baseStats;
+          let activeStats = calculateStats(activePokemonBaseSpecies, clientPokemon.side.active[0].level);
+          activeStats = boostStats(activeStats, clientPokemon.side.active[0].boosts);
+          let damageRange;
+          damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, clientPokemon.side.active[0], clientPokemon.side.foe.active[0]);
+
+
+          //turn into percentage
+          damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
+          damageRange[1] = (damageRange[1] / foeStats.hp * 100).toFixed(1);
+          let dRText = moveName + ' ';
+          dRText += damageRange[0] + "% - " + damageRange[1] + "%";
+
+          buf += dRText + '<br>';
+
+        }
+        buf += '</p>';
+    }
     buf += '</p>';
+
+
+    // buf += '<p>';
+    // buf += JSON.stringify(randSets[baseSpecies.name]);
+    // buf += '</p>';
 
 
     text += buf;
@@ -210,7 +291,7 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
   let activeStats = calculateStats(activePokemonBaseSpecies, pokemon.side.active[0].level);
   activeStats = boostStats(activeStats, pokemon.side.active[0].boosts);
 
-  let damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, pokemon.side.active[0].level);
+  let damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, pokemon.side.active[0], pokemon.side.foe.active[0]);
   //turn into percentage
   damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
   damageRange[1] = (damageRange[1] / foeStats.hp * 100).toFixed(1);
@@ -348,7 +429,7 @@ const typeEffectivenessChart = {
     "Water": 1,
     "Electric": 1,
     "Grass": 1,
-    "Ice": 1,
+    "Ice": 2,
     "Fighting": 1,
     "Poison": 0.5,
     "Ground": 1,
@@ -450,7 +531,7 @@ const typeEffectivenessChart = {
     "Grass": 2,
     "Ice": 1,
     "Fighting": 0.5,
-    "Poison": 1,
+    "Poison": 0.5,
     "Ground": 1,
     "Flying": 0.5,
     "Psychic": 2,
