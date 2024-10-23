@@ -2,6 +2,8 @@ if no opposing pokemon still show normal tooltip
 settings dropdown to turn on/off things
 tera-types should have type colours
 add in statuses to stats (para=speed, burn=atk)
+add in common items(choice items, life orb)
+use modified move damage
 
 
 A shown move/ability/item should show up green
