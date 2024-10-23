@@ -205,34 +205,37 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
         buf += '<p>';
         buf += `<strong>${roleName}</strong><br>`;
         buf += `Abilities: ${role["abilities"].join(', ')}<br>`;
-        buf += `Items: ${role["items"].join(', ')}<br>`;
+        buf += `Items: ${role["items"] && role["items"].length > 0 ? role["items"].join(', ') : 'None'}<br>`;
         buf += `Tera Types: ${role["teraTypes"].join(', ')}<br>`;
         buf += `Moves: `;
 
         for (const moveName of role["moves"]) {
           let move = this.battle.dex.moves.get(moveName);
-
-          let foePokemonBaseSpecies = clientPokemon.side.foe.active[0].getBaseSpecies();
-          //let baseStats = baseSpecies.baseStats;
-          let foeStats = calculateStats(foePokemonBaseSpecies, clientPokemon.side.foe.active[0].level);
-          foeStats = boostStats(foeStats, clientPokemon.side.foe.active[0].boosts);
-        
-          console.log(clientPokemon.side.active[0].name);
-          // Use the getBaseSpecies method
-          let activePokemonBaseSpecies = clientPokemon.side.active[0].getBaseSpecies();
-          //let baseStats = baseSpecies.baseStats;
-          let activeStats = calculateStats(activePokemonBaseSpecies, clientPokemon.side.active[0].level);
-          activeStats = boostStats(activeStats, clientPokemon.side.active[0].boosts);
-          let damageRange;
-          damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, clientPokemon.side.active[0], clientPokemon.side.foe.active[0]);
-
-
-          //turn into percentage
-          damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
-          damageRange[1] = (damageRange[1] / foeStats.hp * 100).toFixed(1);
           let dRText = moveName + ' ';
-          dRText += damageRange[0] + "% - " + damageRange[1] + "%";
+          if (clientPokemon.side.foe.active[0]){
+            let foePokemonBaseSpecies = clientPokemon.side.foe.active[0].getBaseSpecies();
+            //let baseStats = baseSpecies.baseStats;
+            let foeStats = calculateStats(foePokemonBaseSpecies, clientPokemon.side.foe.active[0].level);
+            foeStats = boostStats(foeStats, clientPokemon.side.foe.active[0].boosts);
+          
+            console.log(clientPokemon.name);
+            // Use the getBaseSpecies method
+            let activePokemonBaseSpecies = clientPokemon.getBaseSpecies();
+            //let baseStats = baseSpecies.baseStats;
+            let activeStats = calculateStats(activePokemonBaseSpecies, clientPokemon.level);
+            activeStats = boostStats(activeStats, clientPokemon.boosts);
+            let damageRange;
+            damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, clientPokemon, clientPokemon.side.foe.active[0]);
 
+
+            //turn into percentage
+            damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
+            damageRange[1] = (damageRange[1] / foeStats.hp * 100).toFixed(1);
+            
+            dRText += damageRange[0] + "% - " + damageRange[1] + "%";
+
+            
+          }
           buf += dRText + '<br>';
 
         }
@@ -356,7 +359,7 @@ const typeEffectivenessChart = {
     "Flying": 1,
     "Psychic": 1,
     "Bug": 1,
-    "Rock": 1,
+    "Rock": 2,
     "Ghost": 1,
     "Dragon": 0.5,
     "Dark": 1,
