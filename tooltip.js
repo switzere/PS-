@@ -51,9 +51,9 @@ function calculateStats(pokemon, level) {
   return stats;
 }
 
-function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, activePokemon, foeActivePokemon) {
+function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, activePokemon, foeActivePokemon, adjustedBasePower) {
   //gets the damage of the move, then using the base power, attacker's attack, defender's defense, and the level, calculates the damage
-  if (move.basePower === 0) return [0, 0];
+  if (adjustedBasePower === 0) return [0, 0];
 
   let level = activePokemon.level;
 
@@ -91,10 +91,10 @@ function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, 
   let stab = move.type === activeType1 || move.type === activeType2 || move.type === terraType ? 1.5 : 1;
 
   // damage floor
-  let damageFloor = ((((2 * level)/5 + 2) * move.basePower * (attacker/defender)) / 50 + 2) * 0.85 * typeEffectiveness * stab;
+  let damageFloor = ((((2 * level)/5 + 2) * adjustedBasePower * (attacker/defender)) / 50 + 2) * 0.85 * typeEffectiveness * stab;
 
   // damage ceiling
-  let damageCeiling = ((((2 * level)/5 + 2) * move.basePower * (attacker/defender)) / 50 + 2) * 1 * typeEffectiveness * stab;
+  let damageCeiling = ((((2 * level)/5 + 2) * adjustedBasePower * (attacker/defender)) / 50 + 2) * 1 * typeEffectiveness * stab;
 
   return [damageFloor, damageCeiling]; // Return damage range as an array
 }
@@ -126,6 +126,9 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
 
   text += '<hr style="border: 1px solid black; margin: 5px 0;">';
 
+  //calculateModifiedStats(clientPokemon: Pokemon | null, serverPokemon: ServerPokemon, statStagesOnly?: boolean) {
+
+  // if not users pokemon
   if (!serverPokemon) {
     if (!clientPokemon) throw new Error('Must pass either clientPokemon or serverPokemon');
     console.log(clientPokemon.name);
@@ -234,6 +237,8 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
             
             dRText += damageRange[0] + "% - " + damageRange[1] + "%";
 
+            //this.showMoveTooltip(move, false, clientPokemon, clientPokemon.side.foe.active[0], false);
+
             
           }
           buf += dRText + '<br>';
@@ -291,10 +296,17 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
   // Use the getBaseSpecies method
   let activePokemonBaseSpecies = pokemon.side.active[0].getBaseSpecies();
   //let baseStats = baseSpecies.baseStats;
-  let activeStats = calculateStats(activePokemonBaseSpecies, pokemon.side.active[0].level);
-  activeStats = boostStats(activeStats, pokemon.side.active[0].boosts);
+  
+  //let activeStats = calculateStats(activePokemonBaseSpecies, pokemon.side.active[0].level);
+  //activeStats = boostStats(activeStats, pokemon.side.active[0].boosts);
 
-  let damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, pokemon.side.active[0], pokemon.side.foe.active[0]);
+                                                                                //true to stat changes only means don't take into account items or abilities ect
+  let modifiedStats = BattleTooltips.prototype.calculateModifiedStats.call(this, pokemon, serverPokemon);
+
+  let activeTarget = pokemon.side.foe.active
+  let moveBasePower = BattleTooltips.prototype.getMoveBasePower.call(this, move, moveType, value, activeTarget).value;
+
+  let damageRange = calculateDamage(move, modifiedStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, pokemon.side.active[0], pokemon.side.foe.active[0], moveBasePower);
   //turn into percentage
   damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
   damageRange[1] = (damageRange[1] / foeStats.hp * 100).toFixed(1);
