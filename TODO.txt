@@ -8,3 +8,6 @@ use modified move damage
 
 A shown move/ability/item should show up green
 An impossible set should be greyed out
+
+Fix opposing move damage(broke by items/base move power)
+add in abilities to damage
