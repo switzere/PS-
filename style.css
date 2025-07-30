@@ -1,28 +1,32 @@
-body {
-  font-family: Arial, sans-serif;
-  padding: 10px;
+.PS-type-Normal    { background: hsl(60,14%,70%); }
+.PS-type-Fighting  { background: hsl(3,40%,70%); }
+.PS-type-Flying    { background: hsl(255,20%,70%); }
+.PS-type-Poison    { background: hsl(300,30%,70%); }
+.PS-type-Ground    { background: hsl(44,27%,70%); }
+.PS-type-Rock      { background: hsl(49,35%,70%); }
+.PS-type-Bug       { background: hsl(66,42%,70%); }
+.PS-type-Ghost     { background: hsl(262,21%,70%); }
+.PS-type-Steel     { background: hsl(240,6%,70%); }
+.PS-type-Fire      { background: hsl(25,40%,70%); }
+.PS-type-Water     { background: hsl(222,29%,70%); }
+.PS-type-Grass     { background: hsl(100,30%,70%); }
+.PS-type-Electric  { background: hsl(48,41%,70%); }
+.PS-type-Psychic   { background: hsl(342,33%,70%); }
+.PS-type-Ice       { background: hsl(180,15%,70%); }
+.PS-type-Dragon    { background: hsl(257,39%,70%); }
+.PS-type-Dark      { background: hsl(24,18%,70%); }
+.PS-type-Fairy     { background: hsl(310,41%,70%); }
+.PS-type-Stellar {
+    background: linear-gradient(90deg, hsl(330, 65%, 65%), hsl(126, 71%, 73%), hsl(231, 100%, 77%));
+    border: 1px solid hsl(330, 66%, 58%);
 }
 
-h1 {
-  font-size: 18px;
-}
-
-button {
-  padding: 10px;
-  font-size: 14px;
-}
-
-.tooltip {
-  position: absolute;
-  background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent black background */
-  color: #fff;
-  padding: 5px;
-  border-radius: 5px;
-  display: none;
-  z-index: 1000;
-  pointer-events: none; /* Prevents the tooltip from interfering with mouse events */
-}
-
-.tooltip-activepokemon {
-  background-color: #9f27ba; /* Replace #yourColor with the desired background color */
+.PS-type-color {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.4em;
+  vertical-align: middle;
+  border-radius: 3px;
+  border: 1px solid #888;
 }

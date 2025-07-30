@@ -13,6 +13,7 @@
     "content_scripts": [
       {
         "matches": ["*://play.pokemonshowdown.com/*", "https://localhost.psim.us/*"],
+        "css": ["style.css"],
         "js": ["content.js"]
       }
     ],

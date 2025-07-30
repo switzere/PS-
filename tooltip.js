@@ -54,16 +54,30 @@ function calculateStats(pokemon, level) {
 function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, activePokemon, foeActivePokemon, adjustedBasePower) {
   //gets the damage of the move, then using the base power, attacker's attack, defender's defense, and the level, calculates the damage
   if (adjustedBasePower === 0) return [0, 0];
+  console.log(move);
 
   let level = activePokemon.level;
 
   //calculate the damage, we have the stats, the base power, level, and type
   let attacker = 0;
   let defender = 0;
-  if(move.category === 'Special') {
+  if(move.id === 'foulplay'){
+    attacker = foeStats.atk;
+    defender = foeStats.def;
+  }
+  else if(move.id === 'bodypress'){
+    attacker = activeStats.def;
+    defender = foeStats.def;
+  }
+  else if(move.id === 'psyshock' || move.id === 'psystrike') {
+    attacker = activeStats.spa;
+    defender = foeStats.def;
+  }
+  else if(move.category === 'Special') {
     attacker = activeStats.spa;
     defender = foeStats.spd;
-  } else if(move.category === 'Physical') {
+  }
+  else if(move.category === 'Physical') {
     attacker = activeStats.atk;
     defender = foeStats.def;
   }
@@ -89,6 +103,16 @@ function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, 
   let typeEffectiveness = typeEffectivenessChart[move.type][foeType1] * (foeType2 ? typeEffectivenessChart[move.type][foeType2] : 1);
 
   let stab = move.type === activeType1 || move.type === activeType2 || move.type === terraType ? 1.5 : 1;
+
+  if(adjustedBasePower === undefined) {
+    adjustedBasePower = move.basePower;
+  }
+
+  console.log(activePokemon);
+  //if life orb add 1.3 to the adjustedBasePower
+  if (activePokemon.item && activePokemon.item === 'lifeorb') {
+    adjustedBasePower *= 1.3;
+  }
 
   // damage floor
   let damageFloor = ((((2 * level)/5 + 2) * adjustedBasePower * (attacker/defender)) / 50 + 2) * 0.85 * typeEffectiveness * stab;
@@ -122,7 +146,8 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
   // Call the original method
   let text = originalShowPokemonTooltip.call(this, clientPokemon, serverPokemon, isActive, illusionIndex);
 
-  //console.log(originalShowPokemonTooltip);
+  console.log(clientPokemon);
+  console.log(serverPokemon);
 
   text += '<hr style="border: 1px solid black; margin: 5px 0;">';
 
@@ -203,6 +228,26 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
     //             "Will-O-Wisp"
     //         ]
     buf += '<p>';
+
+    // Get revealed/used moves for the opponent's Pokémon from moveTrack
+    let revealedMoves = [];
+    if (clientPokemon.moveTrack && Array.isArray(clientPokemon.moveTrack)) {
+      revealedMoves = clientPokemon.moveTrack.map(m => m[0].toLowerCase());
+    }
+
+    console.log(sets['roles']);
+
+    // Only keep roles that contain all revealed moves
+    if (revealedMoves.length > 0) {
+      for (const roleName of Object.keys(sets['roles'])) {
+        const role = sets['roles'][roleName];
+        // If any revealed move is not in this role's moves, remove the role
+        if (!revealedMoves.every(m => role["moves"].map(x => x.toLowerCase()).includes(m))) {
+          delete sets['roles'][roleName];
+        }
+      }
+    }
+
     for (const roleName in sets['roles']) {
         const role = sets['roles'][roleName];
         buf += '<p>';
@@ -210,12 +255,21 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
         buf += `Abilities: ${role["abilities"].join(', ')}<br>`;
         buf += `Items: ${role["items"] && role["items"].length > 0 ? role["items"].join(', ') : 'None'}<br>`;
         buf += `Tera Types: ${role["teraTypes"].join(', ')}<br>`;
-        buf += `Moves: `;
+        buf += `Moves: <br>`;
 
         for (const moveName of role["moves"]) {
           let move = this.battle.dex.moves.get(moveName);
-          let dRText = moveName + ' ';
-          if (clientPokemon.side.foe.active[0]){
+          let moveTypeClass = `PS-type-${move.type}`;
+
+          let dRText = '';
+          let colorBox = `<span class="PS-type-color PS-type-${move.type}"></span>`;
+          let moveSpan = `${colorBox}${moveName} `;
+          if (revealedMoves.includes(moveName.toLowerCase())) {
+            dRText = `<strong>${moveSpan}</strong>`;
+          } else {
+            dRText = moveSpan;
+          }
+          if (clientPokemon.side.foe.active[0]) {
             let foePokemonBaseSpecies = clientPokemon.side.foe.active[0].getBaseSpecies();
             //let baseStats = baseSpecies.baseStats;
             let foeStats = calculateStats(foePokemonBaseSpecies, clientPokemon.side.foe.active[0].level);
@@ -228,14 +282,20 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
             let activeStats = calculateStats(activePokemonBaseSpecies, clientPokemon.level);
             activeStats = boostStats(activeStats, clientPokemon.boosts);
             let damageRange;
+            
             damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, clientPokemon, clientPokemon.side.foe.active[0]);
 
+              console.log(move.name + " damage range: " + damageRange);
 
             //turn into percentage
             damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
             damageRange[1] = (damageRange[1] / foeStats.hp * 100).toFixed(1);
             
-            dRText += damageRange[0] + "% - " + damageRange[1] + "%";
+            if (isNaN(damageRange[0]) || isNaN(damageRange[1])) {
+              dRText += 'N/A';
+            } else {
+              dRText += damageRange[0] + "% - " + damageRange[1] + "%";
+            }
 
             //this.showMoveTooltip(move, false, clientPokemon, clientPokemon.side.foe.active[0], false);
 
@@ -274,6 +334,8 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
   // Call the original method
   let text = originalShowMoveTooltip.call(this, move, isZOrMax, pokemon, serverPokemon, gmaxMove);
 
+  console.log(serverPokemon);
+
   let value = new ModifiableValue(this.battle, pokemon, serverPokemon);
   let [moveType, category] = this.getMoveType(move, value, gmaxMove || isZOrMax === 'maxmove');
   let categoryDiff = move.category !== category;
@@ -285,14 +347,12 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
   // text += Dex.getTypeIcon(moveType);
   // text += ` ${Dex.getCategoryIcon(category)}</h2>`;
 
-  console.log(pokemon.side.foe.active[0].name);
   // Use the getBaseSpecies method
   let foePokemonBaseSpecies = pokemon.side.foe.active[0].getBaseSpecies();
   //let baseStats = baseSpecies.baseStats;
   let foeStats = calculateStats(foePokemonBaseSpecies, pokemon.side.foe.active[0].level);
   foeStats = boostStats(foeStats, pokemon.side.foe.active[0].boosts);
 
-  console.log(pokemon.side.active[0].name);
   // Use the getBaseSpecies method
   let activePokemonBaseSpecies = pokemon.side.active[0].getBaseSpecies();
   //let baseStats = baseSpecies.baseStats;
@@ -303,10 +363,10 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
                                                                                 //true to stat changes only means don't take into account items or abilities ect
   let modifiedStats = BattleTooltips.prototype.calculateModifiedStats.call(this, pokemon, serverPokemon);
 
-  let activeTarget = pokemon.side.foe.active
+  let activeTarget = pokemon.side.foe.active[0]
   let moveBasePower = BattleTooltips.prototype.getMoveBasePower.call(this, move, moveType, value, activeTarget).value;
 
-  let damageRange = calculateDamage(move, modifiedStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, pokemon.side.active[0], pokemon.side.foe.active[0], moveBasePower);
+  let damageRange = calculateDamage(move, modifiedStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, serverPokemon, pokemon.side.foe.active[0], moveBasePower);
   //turn into percentage
   damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
   damageRange[1] = (damageRange[1] / foeStats.hp * 100).toFixed(1);
