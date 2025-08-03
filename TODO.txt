@@ -11,3 +11,40 @@ An impossible set should be greyed out
 
 Fix opposing move damage(broke by items/base move power)
 add in abilities to damage
+
+  console.log(serverPokemon);
+teraType
+: 
+"Fairy"
+terastallized
+: 
+""
+
+
+
+
+  console.log(activePokemon);
+
+prevItem
+: 
+"Assault Vest"
+prevItemEffect
+: 
+"knocked off"
+
+  console.log(activePokemon);
+
+volatiles
+: 
+formechange
+: 
+(2) ['formechange', 'Salamence']
+transform
+: 
+(5) ['transform', Pokemon, false, 'M', 77]
+typechange
+: 
+(2) ['typechange', 'Dragon/Flying']
+
+
+judgement, ditto, terablast

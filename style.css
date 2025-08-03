@@ -1,24 +1,24 @@
-.PS-type-Normal    { background: hsl(60,14%,70%); }
-.PS-type-Fighting  { background: hsl(3,40%,70%); }
-.PS-type-Flying    { background: hsl(255,20%,70%); }
-.PS-type-Poison    { background: hsl(300,30%,70%); }
-.PS-type-Ground    { background: hsl(44,27%,70%); }
-.PS-type-Rock      { background: hsl(49,35%,70%); }
-.PS-type-Bug       { background: hsl(66,42%,70%); }
-.PS-type-Ghost     { background: hsl(262,21%,70%); }
-.PS-type-Steel     { background: hsl(240,6%,70%); }
-.PS-type-Fire      { background: hsl(25,40%,70%); }
-.PS-type-Water     { background: hsl(222,29%,70%); }
-.PS-type-Grass     { background: hsl(100,30%,70%); }
-.PS-type-Electric  { background: hsl(48,41%,70%); }
-.PS-type-Psychic   { background: hsl(342,33%,70%); }
-.PS-type-Ice       { background: hsl(180,15%,70%); }
-.PS-type-Dragon    { background: hsl(257,39%,70%); }
-.PS-type-Dark      { background: hsl(24,18%,70%); }
-.PS-type-Fairy     { background: hsl(310,41%,70%); }
+.PS-type-Normal    { background: rgb(173, 165, 148); }
+.PS-type-Fighting  { background: rgb(165, 82, 57); }
+.PS-type-Flying    { background: rgb(156, 173, 247); }
+.PS-type-Poison    { background: rgb(181, 90, 165); }
+.PS-type-Ground    { background: rgb(214, 181, 90); }
+.PS-type-Rock      { background: rgb(189, 165, 90); }
+.PS-type-Bug       { background: rgb(173, 189, 33); }
+.PS-type-Ghost     { background: rgb(99, 99, 181); }
+.PS-type-Steel     { background: rgb(173, 173, 198); }
+.PS-type-Fire      { background: rgb(247, 82, 49); }
+.PS-type-Water     { background: rgb(57, 156, 255); }
+.PS-type-Grass     { background: rgb(123, 206, 82); }
+.PS-type-Electric  { background: rgb(255, 198, 49); }
+.PS-type-Psychic   { background: rgb(255, 115, 165); }
+.PS-type-Ice       { background: rgb(90, 206, 231); }
+.PS-type-Dragon    { background: rgb(123, 99, 231); }
+.PS-type-Dark      { background: rgb(115, 90, 74); }
+.PS-type-Fairy     { background: rgb(255, 101, 213); }
 .PS-type-Stellar {
-    background: linear-gradient(90deg, hsl(330, 65%, 65%), hsl(126, 71%, 73%), hsl(231, 100%, 77%));
-    border: 1px solid hsl(330, 66%, 58%);
+    background: linear-gradient(90deg, rgb(255, 0, 85), rgb(0, 255, 85), rgb(0, 85, 255));
+    border: 1px solid rgb(255, 0, 85);
 }
 
 .PS-type-color {

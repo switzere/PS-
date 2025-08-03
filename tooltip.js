@@ -16,7 +16,7 @@ fetch('https://raw.githubusercontent.com/pkmn/randbats/main/data/gen9randombattl
     return response.json();
   })
   .then(data => {
-    console.log(data); // Process the JSON data as needed
+    //console.log(data); // Process the JSON data as needed
     
     randSets = data;
   })
@@ -55,6 +55,13 @@ function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, 
   //gets the damage of the move, then using the base power, attacker's attack, defender's defense, and the level, calculates the damage
   if (adjustedBasePower === 0) return [0, 0];
   console.log(move);
+  console.log(activeStats);
+  console.log(foeStats);
+  console.log(activePokemonBaseSpecies);
+  console.log(foePokemonBaseSpecies);
+  console.log(activePokemon);
+  console.log(foeActivePokemon);
+  console.log(adjustedBasePower)
 
   let level = activePokemon.level;
 
@@ -73,6 +80,19 @@ function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, 
     attacker = activeStats.spa;
     defender = foeStats.def;
   }
+  // else if(move.id === 'knockoff'){
+
+  // }
+  else if(move.id === 'terablast') {
+    if (activePokemon.terastallized) {
+      console.log("Terastallized move detected");
+      console.log(move);
+    }
+    else {
+      attacker = activeStats.spa;
+      defender = foeStats.spd;
+    }
+  }
   else if(move.category === 'Special') {
     attacker = activeStats.spa;
     defender = foeStats.spd;
@@ -81,6 +101,49 @@ function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, 
     attacker = activeStats.atk;
     defender = foeStats.def;
   }
+
+  //attacking pokemon item
+  //if life orb add 1.3 to the adjustedBasePower
+  if (activePokemon.item && activePokemon.item === 'lifeorb') {
+    attacker *= 1.3;
+  }
+  else if (activePokemon.item && activePokemon.item === 'leftovers') {
+    attacker *= 10;
+  }
+
+
+
+  //defending pokemon item
+  //eviolite
+  if(foeActivePokemon.item && foeActivePokemon.item === 'eviolite') {
+    defender *= 1.5;
+  }
+  //assault vest
+  else if(foeActivePokemon.item && foeActivePokemon.item === 'assaultvest' && move.category === 'Special') {
+    defender *= 1.5;
+  }
+
+  //active pokemon ability
+  //if sword of ruin
+  if (activePokemon.ability && activePokemon.ability === 'swordofruin' && move.category === 'Physical') {
+    defender *= 0.75;
+  }
+  //if beads of ruin
+  else if (activePokemon.ability && activePokemon.ability === 'beadsofruin' && move.category === 'Special') {
+    defender *= 0.75;
+  }
+  //TODO: unaware?, adaptability, sheer force, technician, huge power, pure power, simple, power spot
+
+  //defending pokemon ability
+  //if vessel of ruin
+  if (foeActivePokemon.ability && foeActivePokemon.ability === 'vesselofruin' && move.category === 'Special') {
+    attacker *= 0.75;
+  }
+  //if tablets of ruin
+  else if (foeActivePokemon.ability && foeActivePokemon.ability === 'tabletsofruin' && move.category === 'Physical') {
+    attacker *= 0.75;
+  }
+  //TODO: fur coat, multiscale, filter, fluffy
 
   let activeType1 = activePokemonBaseSpecies.types[0];
   let activeType2 = activePokemonBaseSpecies.types[1];
@@ -106,12 +169,6 @@ function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, 
 
   if(adjustedBasePower === undefined) {
     adjustedBasePower = move.basePower;
-  }
-
-  console.log(activePokemon);
-  //if life orb add 1.3 to the adjustedBasePower
-  if (activePokemon.item && activePokemon.item === 'lifeorb') {
-    adjustedBasePower *= 1.3;
   }
 
   // damage floor
@@ -146,17 +203,19 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
   // Call the original method
   let text = originalShowPokemonTooltip.call(this, clientPokemon, serverPokemon, isActive, illusionIndex);
 
-  console.log(clientPokemon);
-  console.log(serverPokemon);
+  //console.log(clientPokemon);
+  //console.log(serverPokemon);
 
-  text += '<hr style="border: 1px solid black; margin: 5px 0;">';
 
   //calculateModifiedStats(clientPokemon: Pokemon | null, serverPokemon: ServerPokemon, statStagesOnly?: boolean) {
 
   // if not users pokemon
   if (!serverPokemon) {
     if (!clientPokemon) throw new Error('Must pass either clientPokemon or serverPokemon');
-    console.log(clientPokemon.name);
+
+    text += '<hr style="border: 1px solid black; margin: 5px 0;">';
+
+    //console.log(clientPokemon.name);
     // Use the getBaseSpecies method
     let baseSpecies = clientPokemon.getBaseSpecies();
     //let baseStats = baseSpecies.baseStats;
@@ -207,26 +266,6 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
       sets = randSets[baseSpecies.baseSpecies];
     }
 
-
-
-    // "abilities": [
-    //             "Wind Rider"
-    //         ],
-    //         "items": [
-    //             "Heavy-Duty Boots",
-    //             "Life Orb"
-    //         ],
-    //         "teraTypes": [
-    //             "Dark",
-    //             "Poison"
-    //         ],
-    //         "moves": [
-    //             "Defog",
-    //             "Knock Off",
-    //             "Leaf Storm",
-    //             "Sucker Punch",
-    //             "Will-O-Wisp"
-    //         ]
     buf += '<p>';
 
     // Get revealed/used moves for the opponent's Pokémon from moveTrack
@@ -235,7 +274,7 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
       revealedMoves = clientPokemon.moveTrack.map(m => m[0].toLowerCase());
     }
 
-    console.log(sets['roles']);
+    //console.log(sets['roles']);
 
     // Only keep roles that contain all revealed moves
     if (revealedMoves.length > 0) {
@@ -247,6 +286,12 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
         }
       }
     }
+
+    //for all roles check if only 1 possibility for item
+    let uniqueItems = [...new Set(Object.values(sets['roles']).flatMap(role => role.items.map(item => item.toLowerCase().replace(/\s+/g, ''))))];
+
+    //for all abilities check if only 1 possibility for ability
+    let uniqueAbilities = [...new Set(Object.values(sets['roles']).flatMap(role => role.abilities.map(ability => ability.toLowerCase().replace(/\s+/g, ''))))];
 
     for (const roleName in sets['roles']) {
         const role = sets['roles'][roleName];
@@ -275,17 +320,28 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
             let foeStats = calculateStats(foePokemonBaseSpecies, clientPokemon.side.foe.active[0].level);
             foeStats = boostStats(foeStats, clientPokemon.side.foe.active[0].boosts);
           
-            console.log(clientPokemon.name);
+            //console.log(clientPokemon.name);
             // Use the getBaseSpecies method
             let activePokemonBaseSpecies = clientPokemon.getBaseSpecies();
             //let baseStats = baseSpecies.baseStats;
             let activeStats = calculateStats(activePokemonBaseSpecies, clientPokemon.level);
             activeStats = boostStats(activeStats, clientPokemon.boosts);
             let damageRange;
-            
+
+            //if opponent has assault vest as it's only item, add the item to the clientPokemon.side.foe.active[0]
+            if(uniqueItems.length === 1) {
+              clientPokemon.item = uniqueItems[0];
+            }
+            //if opponent has only 1 ability, add the ability to the clientPokemon.side.foe.active[0]
+            if(uniqueAbilities.length === 1) {
+              clientPokemon.ability = uniqueAbilities[0];
+            }
+
+            //TODO: figure out how to get your own pokemon in this tooltip
+
             damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, clientPokemon, clientPokemon.side.foe.active[0]);
 
-              console.log(move.name + " damage range: " + damageRange);
+              //console.log(move.name + " damage range: " + damageRange);
 
             //turn into percentage
             damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
@@ -325,6 +381,9 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
     // }
     // text += buf;
   }
+  else {
+    //placeholder for your pokemon
+  }
 
 
   return text;//originalContent+"<img src=\"https://play.pokemonshowdown.com/sprites/types/Fairy.png\" alt=\"Fairy\" height=\"14\" width=\"32\" class=\"pixelated\" />";
@@ -334,7 +393,7 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
   // Call the original method
   let text = originalShowMoveTooltip.call(this, move, isZOrMax, pokemon, serverPokemon, gmaxMove);
 
-  console.log(serverPokemon);
+  //console.log(serverPokemon);
 
   let value = new ModifiableValue(this.battle, pokemon, serverPokemon);
   let [moveType, category] = this.getMoveType(move, value, gmaxMove || isZOrMax === 'maxmove');
@@ -550,7 +609,7 @@ const typeEffectivenessChart = {
     "Ground": 1,
     "Flying": 0,
     "Psychic": 1,
-    "Bug": 1,
+    "Bug": 0.5,
     "Rock": 2,
     "Ghost": 1,
     "Dragon": 1,
@@ -649,7 +708,7 @@ const typeEffectivenessChart = {
     "Poison": 1,
     "Ground": 1,
     "Flying": 1,
-    "Psychic": 1,
+    "Psychic": 2,
     "Bug": 1,
     "Rock": 1,
     "Ghost": 2,
