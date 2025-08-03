@@ -47,4 +47,10 @@ typechange
 (2) ['typechange', 'Dragon/Flying']
 
 
+this.battle.myPokemon > gives array of your pokemon > active: true tells which one is active
+
+
+
+
+
 judgement, ditto, terablast

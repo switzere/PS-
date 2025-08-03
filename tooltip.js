@@ -85,7 +85,7 @@ function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, 
   // }
   else if(move.id === 'terablast') {
     if (activePokemon.terastallized) {
-      console.log("Terastallized move detected");
+      console.log("Terrastallized move detected");
       console.log(move);
     }
     else {
@@ -106,9 +106,6 @@ function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, 
   //if life orb add 1.3 to the adjustedBasePower
   if (activePokemon.item && activePokemon.item === 'lifeorb') {
     attacker *= 1.3;
-  }
-  else if (activePokemon.item && activePokemon.item === 'leftovers') {
-    attacker *= 10;
   }
 
 
@@ -338,6 +335,9 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
             }
 
             //TODO: figure out how to get your own pokemon in this tooltip
+
+            console.log("My Pokemon: ");
+            console.log(this.battle.myPokemon);
 
             damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, clientPokemon, clientPokemon.side.foe.active[0]);
 
