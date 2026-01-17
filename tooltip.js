@@ -5,6 +5,15 @@ const originalShowPokemonTooltip = BattleTooltips.prototype.showPokemonTooltip;
 
 const originalShowMoveTooltip = BattleTooltips.prototype.showMoveTooltip;
 
+let addonEnabled = true; // default
+
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'PS_ADDON_ENABLED') {
+    addonEnabled = event.data.value === true;
+    console.log('[Injected] addonEnabled set to', addonEnabled);
+  }
+});
+
 let randSets = {};
 
 // Fetch JSON data from the URL
@@ -200,6 +209,10 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
   // Call the original method
   let text = originalShowPokemonTooltip.call(this, clientPokemon, serverPokemon, isActive, illusionIndex);
 
+  if (!addonEnabled) {
+    return text;
+  }
+
   //console.log(clientPokemon);
   //console.log(serverPokemon);
 
@@ -392,6 +405,10 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
 ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMax, pokemon, serverPokemon, gmaxMove) {
   // Call the original method
   let text = originalShowMoveTooltip.call(this, move, isZOrMax, pokemon, serverPokemon, gmaxMove);
+
+  if (!addonEnabled) {
+    return text;
+  }
 
   //console.log(serverPokemon);
 
