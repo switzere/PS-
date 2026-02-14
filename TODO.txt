@@ -49,7 +49,7 @@ typechange
 
 this.battle.myPokemon > gives array of your pokemon > active: true tells which one is active
 
-
+Weather, Terrain
 
 
 

@@ -5,7 +5,7 @@ const originalShowPokemonTooltip = BattleTooltips.prototype.showPokemonTooltip;
 
 const originalShowMoveTooltip = BattleTooltips.prototype.showMoveTooltip;
 
-let addonEnabled = true; // default
+let addonEnabled = false; // default
 
 window.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'PS_ADDON_ENABLED') {
