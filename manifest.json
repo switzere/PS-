@@ -14,7 +14,7 @@
       {
         "matches": ["*://play.pokemonshowdown.com/*", "https://localhost.psim.us/*"],
         "css": ["style.css"],
-        "js": ["content.js"]
+        "js": ["content.js", "layout.js"]
       }
     ],
     "web_accessible_resources": [
