@@ -194,3 +194,54 @@ input:checked + .slider:before {
   height: auto !important;
   transform: scale(1.2);
 } */
+
+.weather-div {
+    /*display: flex;
+    /*flex-direction: column; /* Align squares vertically */
+    /*gap: 10px; /* Add spacing between squares */
+    /*position: relative; /* Ensure proper positioning for squares */
+    position: absolute;
+    top: 10px; /* Adjust as needed */
+    left: 10px; /* Adjust as needed */
+        z-index: 1000;
+
+}
+
+/* Base style for all weather squares */
+.weather-square {
+    width: 20px;
+    height: 20px;
+}
+
+/* Specific styles for each weather condition */
+.weather-square.sandstorm {
+    background-color: sandybrown;
+}
+
+.weather-square.sun {
+    background-color: yellow;
+}
+
+.weather-square.rain {
+    background-color: lightblue;
+}
+
+.weather-square.snow {
+    background-color: lightgray;
+}
+
+.weather-square.grassy-terrain {
+    background-color: lightgreen;
+}
+
+.weather-square.misty-terrain {
+    background-color: lightgray;
+}
+
+.weather-square.electric-terrain {
+    background-color: lightyellow;
+}
+
+.weather-square.psychic-terrain {
+    background-color: plum;
+}
