@@ -6,11 +6,19 @@ const originalShowPokemonTooltip = BattleTooltips.prototype.showPokemonTooltip;
 const originalShowMoveTooltip = BattleTooltips.prototype.showMoveTooltip;
 
 let addonEnabled = false; // default
+let toggleStats = false;
+let toggleMovesets = false;
 
 window.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'PS_ADDON_ENABLED') {
-    addonEnabled = event.data.value === true;
     console.log('[Injected] addonEnabled set to', addonEnabled);
+    addonEnabled = event.data.value === true;
+  }
+  if (event.data && event.data.type === 'PS_TOGGLE_STATS') {
+    toggleStats = event.data.value === true;
+  } 
+  if (event.data && event.data.type === 'PS_TOGGLE_MOVESETS') {
+    toggleMovesets = event.data.value === true;
   }
 });
 
@@ -234,148 +242,158 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
 
     let modifiedStats = boostStats(stats, boosts);
 
-    let buf = '<p>';
+    let buf = '';
 
-    for (const statName of Object.keys(stats)) {
-      if (this.battle.gen === 1 && statName === 'spd') continue;
-      if (statName === 'hp') continue;
-      let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
-      buf += statName === 'atk' ? '<small>' : '<small> / ';
-      buf += '' + BattleText[statLabel].statShortName + '&nbsp;</small>';
-      buf += '' + stats[statName];
-      //if (modifiedStats[statName] !== stats[statName]) hasModifiedStat = true;
-    }
-
-    buf += '</p>';
-
-    //if the stats were modified
-    if (clientPokemon.boosts) {
-      buf += '<p><small>(After stat modifiers:)</small></p>';
+    if (toggleStats) {
       buf += '<p>';
-      for (const statName of Object.keys(modifiedStats)) {
+      console.log("stats enabled");
+
+      for (const statName of Object.keys(stats)) {
         if (this.battle.gen === 1 && statName === 'spd') continue;
         if (statName === 'hp') continue;
         let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
         buf += statName === 'atk' ? '<small>' : '<small> / ';
         buf += '' + BattleText[statLabel].statShortName + '&nbsp;</small>';
-        if (modifiedStats[statName] === stats[statName]) {
-          buf += '' + modifiedStats[statName];
-        } else if (modifiedStats[statName] < stats[statName]) {
-          buf += '<strong class="stat-lowered">' + modifiedStats[statName] + '</strong>';
-        } else if (modifiedStats[statName] > stats[statName]) {
-          buf += '<strong class="stat-boosted">' + modifiedStats[statName] + '</strong>';
-        }
+        buf += '' + stats[statName];
+        //if (modifiedStats[statName] !== stats[statName]) hasModifiedStat = true;
       }
-    }
 
-    buf += '</p>';
+      buf += '</p>';
 
-    let sets = randSets[baseSpecies.name]
-    //if sets are undefined
-    if (!sets) {
-      sets = randSets[baseSpecies.baseSpecies];
-    }
-
-    buf += '<p>';
-
-    // Get revealed/used moves for the opponent's Pokémon from moveTrack
-    let revealedMoves = [];
-    if (clientPokemon.moveTrack && Array.isArray(clientPokemon.moveTrack)) {
-      revealedMoves = clientPokemon.moveTrack.map(m => m[0].toLowerCase());
-    }
-
-    //console.log(sets['roles']);
-
-    // Only keep roles that contain all revealed moves
-    if (revealedMoves.length > 0) {
-      for (const roleName of Object.keys(sets['roles'])) {
-        const role = sets['roles'][roleName];
-        // If any revealed move is not in this role's moves, remove the role
-        if (!revealedMoves.every(m => role["moves"].map(x => x.toLowerCase()).includes(m))) {
-          delete sets['roles'][roleName];
-        }
-      }
-    }
-
-    //for all roles check if only 1 possibility for item
-    let uniqueItems = [...new Set(Object.values(sets['roles']).flatMap(role => role.items.map(item => item.toLowerCase().replace(/\s+/g, ''))))];
-
-    //for all abilities check if only 1 possibility for ability
-    let uniqueAbilities = [...new Set(Object.values(sets['roles']).flatMap(role => role.abilities.map(ability => ability.toLowerCase().replace(/\s+/g, ''))))];
-
-    for (const roleName in sets['roles']) {
-        const role = sets['roles'][roleName];
+      //if the stats were modified
+      if (clientPokemon.boosts) {
+        buf += '<p><small>(After stat modifiers:)</small></p>';
         buf += '<p>';
-        buf += `<strong>${roleName}</strong><br>`;
-        buf += `Abilities: ${role["abilities"].join(', ')}<br>`;
-        buf += `Items: ${role["items"] && role["items"].length > 0 ? role["items"].join(', ') : 'None'}<br>`;
-        buf += `Tera Types: ${role["teraTypes"].join(', ')}<br>`;
-        buf += `Moves: <br>`;
-
-        for (const moveName of role["moves"]) {
-          let move = this.battle.dex.moves.get(moveName);
-          let moveTypeClass = `PS-type-${move.type}`;
-
-          let dRText = '';
-          let colorBox = `<span class="PS-type-color PS-type-${move.type}"></span>`;
-          let moveSpan = `${colorBox}${moveName} `;
-          if (revealedMoves.includes(moveName.toLowerCase())) {
-            dRText = `<strong>${moveSpan}</strong>`;
-          } else {
-            dRText = moveSpan;
+        for (const statName of Object.keys(modifiedStats)) {
+          if (this.battle.gen === 1 && statName === 'spd') continue;
+          if (statName === 'hp') continue;
+          let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
+          buf += statName === 'atk' ? '<small>' : '<small> / ';
+          buf += '' + BattleText[statLabel].statShortName + '&nbsp;</small>';
+          if (modifiedStats[statName] === stats[statName]) {
+            buf += '' + modifiedStats[statName];
+          } else if (modifiedStats[statName] < stats[statName]) {
+            buf += '<strong class="stat-lowered">' + modifiedStats[statName] + '</strong>';
+          } else if (modifiedStats[statName] > stats[statName]) {
+            buf += '<strong class="stat-boosted">' + modifiedStats[statName] + '</strong>';
           }
-          if (clientPokemon.side.foe.active[0]) {
-            let foePokemonBaseSpecies = clientPokemon.side.foe.active[0].getBaseSpecies();
-            //let baseStats = baseSpecies.baseStats;
-            let foeStats = calculateStats(foePokemonBaseSpecies, clientPokemon.side.foe.active[0].level);
-            foeStats = boostStats(foeStats, clientPokemon.side.foe.active[0].boosts);
-          
-            //console.log(clientPokemon.name);
-            // Use the getBaseSpecies method
-            let activePokemonBaseSpecies = clientPokemon.getBaseSpecies();
-            //let baseStats = baseSpecies.baseStats;
-            let activeStats = calculateStats(activePokemonBaseSpecies, clientPokemon.level);
-            activeStats = boostStats(activeStats, clientPokemon.boosts);
-            let damageRange;
-
-            //if opponent has assault vest as it's only item, add the item to the clientPokemon.side.foe.active[0]
-            if(uniqueItems.length === 1) {
-              clientPokemon.item = uniqueItems[0];
-            }
-            //if opponent has only 1 ability, add the ability to the clientPokemon.side.foe.active[0]
-            if(uniqueAbilities.length === 1) {
-              clientPokemon.ability = uniqueAbilities[0];
-            }
-
-            //TODO: figure out how to get your own pokemon in this tooltip
-
-            console.log("My Pokemon: ");
-            console.log(this.battle.myPokemon);
-
-            damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, clientPokemon, clientPokemon.side.foe.active[0]);
-
-              //console.log(move.name + " damage range: " + damageRange);
-
-            //turn into percentage
-            damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
-            damageRange[1] = (damageRange[1] / foeStats.hp * 100).toFixed(1);
-            
-            if (isNaN(damageRange[0]) || isNaN(damageRange[1])) {
-              dRText += 'N/A';
-            } else {
-              dRText += damageRange[0] + "% - " + damageRange[1] + "%";
-            }
-
-            //this.showMoveTooltip(move, false, clientPokemon, clientPokemon.side.foe.active[0], false);
-
-            
-          }
-          buf += dRText + '<br>';
-
         }
-        buf += '</p>';
+      }
+
+      buf += '</p>';
+
     }
-    buf += '</p>';
+
+    if (toggleMovesets) {
+
+      let sets = randSets[baseSpecies.name]
+      //if sets are undefined
+      if (!sets) {
+        sets = randSets[baseSpecies.baseSpecies];
+      }
+      // Get revealed/used moves for the opponent's Pokémon from moveTrack
+      let revealedMoves = [];
+      if (clientPokemon.moveTrack && Array.isArray(clientPokemon.moveTrack)) {
+        revealedMoves = clientPokemon.moveTrack.map(m => m[0].toLowerCase());
+      }
+
+      //console.log(sets['roles']);
+
+      // Only keep roles that contain all revealed moves
+      if (revealedMoves.length > 0) {
+        for (const roleName of Object.keys(sets['roles'])) {
+          const role = sets['roles'][roleName];
+          // If any revealed move is not in this role's moves, remove the role
+          if (!revealedMoves.every(m => role["moves"].map(x => x.toLowerCase()).includes(m))) {
+            delete sets['roles'][roleName];
+          }
+        }
+      }
+
+      //for all roles check if only 1 possibility for item
+      let uniqueItems = [...new Set(Object.values(sets['roles']).flatMap(role => role.items.map(item => item.toLowerCase().replace(/\s+/g, ''))))];
+
+      //for all abilities check if only 1 possibility for ability
+      let uniqueAbilities = [...new Set(Object.values(sets['roles']).flatMap(role => role.abilities.map(ability => ability.toLowerCase().replace(/\s+/g, ''))))];
+
+
+      //buf += '<p>';
+
+      for (const roleName in sets['roles']) {
+          const role = sets['roles'][roleName];
+          buf += '<p>';
+          buf += `<strong>${roleName}</strong><br>`;
+          buf += `Abilities: ${role["abilities"].join(', ')}<br>`;
+          buf += `Items: ${role["items"] && role["items"].length > 0 ? role["items"].join(', ') : 'None'}<br>`;
+          buf += `Tera Types: ${role["teraTypes"].join(', ')}<br>`;
+          buf += `Moves: <br>`;
+
+          for (const moveName of role["moves"]) {
+            let move = this.battle.dex.moves.get(moveName);
+            let moveTypeClass = `PS-type-${move.type}`;
+
+            let dRText = '';
+            let colorBox = `<span class="PS-type-color PS-type-${move.type}"></span>`;
+            let moveSpan = `${colorBox}${moveName} `;
+            if (revealedMoves.includes(moveName.toLowerCase())) {
+              dRText = `<strong>${moveSpan}</strong>`;
+            } else {
+              dRText = moveSpan;
+            }
+            if (clientPokemon.side.foe.active[0]) {
+              let foePokemonBaseSpecies = clientPokemon.side.foe.active[0].getBaseSpecies();
+              //let baseStats = baseSpecies.baseStats;
+              let foeStats = calculateStats(foePokemonBaseSpecies, clientPokemon.side.foe.active[0].level);
+              foeStats = boostStats(foeStats, clientPokemon.side.foe.active[0].boosts);
+            
+              //console.log(clientPokemon.name);
+              // Use the getBaseSpecies method
+              let activePokemonBaseSpecies = clientPokemon.getBaseSpecies();
+              //let baseStats = baseSpecies.baseStats;
+              let activeStats = calculateStats(activePokemonBaseSpecies, clientPokemon.level);
+              activeStats = boostStats(activeStats, clientPokemon.boosts);
+              let damageRange;
+
+              //if opponent has assault vest as it's only item, add the item to the clientPokemon.side.foe.active[0]
+              if(uniqueItems.length === 1) {
+                clientPokemon.item = uniqueItems[0];
+              }
+              //if opponent has only 1 ability, add the ability to the clientPokemon.side.foe.active[0]
+              if(uniqueAbilities.length === 1) {
+                clientPokemon.ability = uniqueAbilities[0];
+              }
+
+              //TODO: figure out how to get your own pokemon in this tooltip
+
+              console.log("My Pokemon: ");
+              console.log(this.battle.myPokemon);
+
+              damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, clientPokemon, clientPokemon.side.foe.active[0]);
+
+                //console.log(move.name + " damage range: " + damageRange);
+
+              //turn into percentage
+              damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
+              damageRange[1] = (damageRange[1] / foeStats.hp * 100).toFixed(1);
+              
+              if (isNaN(damageRange[0]) || isNaN(damageRange[1])) {
+                dRText += 'N/A';
+              } else {
+                dRText += damageRange[0] + "% - " + damageRange[1] + "%";
+              }
+
+              //this.showMoveTooltip(move, false, clientPokemon, clientPokemon.side.foe.active[0], false);
+
+              
+            }
+            buf += dRText + '<br>';
+
+          }
+          buf += '</p>';
+      }
+
+    }
+    //buf += '</p>';
 
 
     // buf += '<p>';
