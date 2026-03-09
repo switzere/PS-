@@ -2,56 +2,8 @@ console.log('layout.js is running');
 
 (function() {
     let weatherObserver = null;
-
-    function updateWeatherDiv() {
-        console.log('Updating weather-div based on .weather em elements');
-
-        // Look for class weather with <em> elements inside
-        const weatherElements = document.querySelectorAll('.weather em');
-        let weatherDiv = document.querySelector('.weather-div');
-
-        // If weather-div already exists, clear its content
-        if (weatherDiv) {
-            weatherDiv.innerHTML = ''; // Clear existing squares
-        } else {
-            // If weather-div doesn't exist, create it
-            weatherDiv = document.createElement('div');
-            weatherDiv.className = 'weather-div';
-            document.body.appendChild(weatherDiv);
-        }
-
-        console.log('Found weather elements:', weatherElements);
-
-        let offsetY = 10;
-
-        weatherElements.forEach(el => {
-            console.log('Found weather element:', el);
-
-            const weatherText = el.textContent.trim().toLowerCase();
-            console.log('Weather text:', weatherText);
-
-            const weatherMatches = weatherText.match(/\bsandstorm\b|\bsun\b|\brain\b|\bsnow\b|\bgrassy terrain\b|\bmisty terrain\b|\belectric terrain\b|\bpsychic terrain\b/g);
-            console.log('Weather matches:', weatherMatches);
-
-            if (weatherMatches) {
-                weatherMatches.forEach(match => {
-                    console.log('Processing weather condition:', match);
-                    const square = document.createElement('div');
-                    square.className = `weather-square ${match.replace(/\s+/g, '-')}`; // Add a class for the weather condition
-
-                    // Set absolute positioning for the square
-                    square.style.top = `${offsetY}px`;
-                    square.style.left = '10px'; // Fixed horizontal position
-
-                    // Increment the vertical offset for the next square
-                    offsetY += 30;
-
-                    // Add the square to the weather-div
-                    weatherDiv.appendChild(square);
-                });
-            }
-        });
-    }
+    let lastWeatherDiv = null;
+    let lastWeatherContent = '';
 
     // Function to handle DOM changes
     function handleDomChanges() {
@@ -75,115 +27,119 @@ console.log('layout.js is running');
         }
     }
 
+    function updateWeatherDiv(weatherDiv) {
+        console.log('Updating weather-div based on .weather em elements');
 
-    // // Set up the MutationObserver to observe the entire DOM
-    // const observer = new MutationObserver((mutationsList) => {
-    //     console.log('Mutations detected:', mutationsList);
-    //     mutationsList.forEach((mutation) => {
-    //         console.log('Processing mutation:', mutation);
-    //         if (mutation.type === 'childList') {
-    //             console.log('Child list mutation detected:', mutation);
-    //             // Check if any new `.ps-room-opaque` elements were added
-    //             const addedNodes = Array.from(mutation.addedNodes);
-    //             console.log('Added nodes:', addedNodes);
-    //             addedNodes.forEach(node => {
-    //                 console.log('Checking added node:', node);
-    //                 if (node.nodeType === 1 && node.classList.contains('ps-room-opaque')) {
-    //                     console.log('New ps-room-opaque element detected:', node);
-    //                     handleDomChanges(); // Handle the new element
-    //                 }
-    //             });
-    //         }
-    //     });
-    // });
+        const currentWeatherContent = weatherDiv.innerHTML.trim();
+        console.log('Current .weather content:', currentWeatherContent, 'Last .weather content:', lastWeatherContent);
+        console.log('Current .weather div:', weatherDiv, 'Last .weather div:', lastWeatherDiv);
+        if (weatherDiv === lastWeatherDiv && currentWeatherContent === lastWeatherContent) {
+            console.log('No changes detected in .weather div. Skipping update.');
+            return; // Skip the update if nothing has changed
+        }
 
-    // // Observe the entire DOM for changes
-    // observer.observe(document.body, { childList: true, subtree: true });
+        // Look for <em> elements inside the specific .weather div
+        const weatherElements = weatherDiv.querySelectorAll('em');
+
+        if (weatherElements.length === 0) {
+            console.log('No <em> elements found inside .weather div yet. Waiting...');
+            return; // Exit if no <em> elements are found
+        }
+
+        weatherElements.forEach((el) => {
+            console.log('Found weather element:', el);
+
+            if (el.querySelector('.weather-condition')) {
+                console.log('Weather text already formatted. Skipping this element.');
+                return; // Skip this element if it is already formatted
+            }
+
+            const weatherText = el.innerHTML.trim(); // Use innerHTML to preserve existing formatting
+            console.log('Weather text:', weatherText);
+
+            const fieldConditions = [
+                'Sun',
+                'Snow',
+                'Sandstorm',
+                'Psychic Terrain',
+                'Grassy Terrain',
+                'Misty Terrain',
+                'Electric Terrain',
+                'Trick Room',
+                'Rain' //rain after terrain
+            ];
+
+            let formattedText = weatherText;
+            fieldConditions.forEach((condition) => {
+                const className = condition.toLowerCase().replace(/\s+/g, '-'); // Convert condition to a class-friendly format
+                const regex = new RegExp(`\\b(${condition})\\b( <small>\\(.*?\\)<\\/small>)`, 'i');
+                formattedText = formattedText.replace(
+                    regex,
+                    `<span class="weather-condition ${className}">$1</span>`
+                );
+            });
 
 
+            // Update the <em> element with the formatted text
+            el.innerHTML = formattedText;
+        });
 
+        lastWeatherDiv = weatherDiv;
+        lastWeatherContent = currentWeatherContent;
 
-    //     // Set up the MutationObserver to observe the entire DOM
-    // const observer = new MutationObserver((mutationsList) => {
-    //     console.log('Mutations detected:', mutationsList);
-    //     mutationsList.forEach((mutation) => {
-    //         console.log('Processing mutation:', mutation);
-
-    //         if (mutation.type === 'childList') {
-    //             console.log('Child list mutation detected:', mutation);
-    //             // Check if any new `.ps-room-opaque` elements were added
-    //             const addedNodes = Array.from(mutation.addedNodes);
-    //             console.log('Added nodes:', addedNodes);
-    //             addedNodes.forEach(node => {
-    //                 console.log('Checking added node:', node);
-    //                 if (node.nodeType === 1 && node.classList.contains('ps-room-opaque')) {
-    //                     console.log('New ps-room-opaque element detected:', node);
-    //                     handleDomChanges(); // Handle the new element
-    //                 }
-    //             });
-    //         }
-
-    //         if (mutation.type === 'attributes') {
-    //             console.log('Attribute mutation detected:', mutation);
-    //             if (mutation.target.classList.contains('ps-room-opaque')) {
-    //                 console.log('Attributes changed on ps-room-opaque:', mutation.target);
-    //                 handleDomChanges(); // Handle the updated element
-    //             }
-    //         }
-    //     });
-    // });
-
-    // // Observe the entire DOM for changes
-    // observer.observe(document.body, {
-    //     childList: true, // Detect when new nodes are added or removed
-    //     attributes: true, // Detect attribute changes
-    //     subtree: true, // Observe all descendants of the target
-    // });
+    }
 
     function observeWeatherDiv() {
-        const weatherDiv = document.querySelectorAll('.weather')[1];
-        console.log('Checking for .weather div:', weatherDiv);
-        console.log('Current weatherObserver:', weatherObserver);
+        const weatherDivs = document.querySelectorAll('.weather'); // Get all .weather divs
+        const weatherDiv = weatherDivs[1]; // Get the second .weather div (index 1)
 
-        if (weatherDiv && !weatherObserver) {
-            console.log('Setting up MutationObserver for .weather div:', weatherDiv);
-
-            // Create a new observer for the .weather div
-            weatherObserver = new MutationObserver((mutationsList) => {
-                console.log('Mutations detected in .weather div:', mutationsList);
-
-                // Temporarily disconnect the observer to prevent infinite loops
-                weatherObserver.disconnect();
-                updateWeatherDiv(weatherDiv); // Update the specific weather-div
-                weatherObserver.observe(weatherDiv, {
-                    childList: true, // Detect when new nodes are added or removed
-                    subtree: true, // Observe all descendants of the .weather div
-                    characterData: true, // Detect changes to the text content of nodes
-                });
-            });
-
-            // Start observing the .weather div
-            weatherObserver.observe(weatherDiv, {
-                childList: true, // Detect when new nodes are added or removed
-                subtree: true, // Observe all descendants of the .weather div
-                characterData: true, // Detect changes to the text content of nodes
-            });
-
-            console.log('MutationObserver is now observing .weather div:', weatherDiv);
-
-            // Initial update
-            updateWeatherDiv(weatherDiv);
+        if (!weatherDiv) {
+            console.log('Second .weather div not found');
+            return;
         }
+
+        console.log('Setting up MutationObserver for second .weather div:', weatherDiv);
+
+        // Create a new observer for the .weather div
+        weatherObserver = new MutationObserver((mutationsList) => {
+            console.log('Mutations detected in .weather div:', mutationsList);
+
+            mutationsList.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                    console.log('Child nodes changed:', mutation);
+                } else if (mutation.type === 'characterData') {
+                    console.log('Text content changed:', mutation.target.textContent);
+                }
+            });
+
+            // Update the weather-div whenever changes are detected
+            updateWeatherDiv(weatherDiv);
+        });
+
+        // Start observing the .weather div
+        weatherObserver.observe(weatherDiv, {
+            childList: true, // Detect when new nodes are added or removed
+            subtree: true, // Observe all descendants of the .weather div
+            characterData: true, // Detect changes to the text content of nodes
+        });
+
+        console.log('MutationObserver is now observing .weather div:', weatherDiv);
+
+        // Initial update
+        updateWeatherDiv(weatherDiv);
     }
 
     // Run the function initially to handle the current DOM
-    handleDomChanges();
+    //handleDomChanges();
 
     // Set up a global MutationObserver to detect when .weather is added to the DOM
-    const globalObserver = new MutationObserver(() => {
+    const globalObserver = new MutationObserver((mutationsList) => {
         console.log('Global DOM mutation detected');
-        handleDomChanges();
-        observeWeatherDiv();
+
+        mutationsList.forEach((mutation) => {
+            // Directly call observeWeatherDiv without filtering for .weather-div
+            observeWeatherDiv();
+        });
     });
 
     globalObserver.observe(document.body, {

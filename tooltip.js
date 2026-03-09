@@ -452,6 +452,42 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
   return text;
 }
 
+//if I can get var BattleRoom = this.BattleRoom = ConsoleRoom.extend({
+//		forfeit: function () {
+		// 	this.send('/forfeit');
+		// },
+// then I can use the showdown commands like /dt sunny day ect
+
+//use ShowdownEnhancedTooltip.BattleTypeChart
+// ShowdownEnhancedTooltip.BattleTypeChart = {
+//   // defending type
+//   "Bug": {
+//     damageGiven: {
+//       // attacking type : effectivenessMultiplier
+//       "Bug": 1,
+//       "Dark": 1,
+//       "Dragon": 1,
+//       "Electric": 1,
+//       "Fairy": 1,
+//       "Fighting": 0.5,
+//       "Fire": 2,
+//       "Flying": 2,
+//       "Ghost": 1,
+//       "Grass": 0.5,
+//       "Ground": 0.5,
+//       "Ice": 1,
+//       "Normal": 1,
+//       "Poison": 1,
+//       "Psychic": 1,
+//       "Rock": 2,
+//       "Steel": 1,
+//       "Water": 1,
+//     },
+//     HPivs: {"atk":30, "def":30, "spd":30},
+//     HPdvs: {"atk":13, "def":13},
+//   },
+//   "Dark": {
+
 
 const typeEffectivenessChart = {
   "Normal": {

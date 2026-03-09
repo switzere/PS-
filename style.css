@@ -195,53 +195,65 @@ input:checked + .slider:before {
   transform: scale(1.2);
 } */
 
-.weather-div {
-    /*display: flex;
-    /*flex-direction: column; /* Align squares vertically */
-    /*gap: 10px; /* Add spacing between squares */
-    /*position: relative; /* Ensure proper positioning for squares */
-    position: absolute;
-    top: 10px; /* Adjust as needed */
-    left: 10px; /* Adjust as needed */
-        z-index: 1000;
-
-}
 
 /* Base style for all weather squares */
-.weather-square {
-    width: 20px;
-    height: 20px;
+.weather-condition {
+    border: 1px solid #000000;
+    opacity: 1 !important;
+    color: #000000;
+    font-weight: bold;
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 1em;
+    margin: 2px;
 }
+
 
 /* Specific styles for each weather condition */
-.weather-square.sandstorm {
-    background-color: sandybrown;
+.weather-condition.sun,
+.weather-condition.desolateland,
+.weather-condition.sunnyday {
+    background-color: #FFEEBB;
 }
 
-.weather-square.sun {
-    background-color: yellow;
+.weather-condition.rain,
+.weather-condition.raindance,
+.weather-condition.primordialsea {
+    background-color: #99BBFF;
 }
 
-.weather-square.rain {
-    background-color: lightblue;
+.weather-condition.sandstorm {
+    background-color: #E6E0AC;
 }
 
-.weather-square.snow {
-    background-color: lightgray;
+.weather-condition.snowscape,
+.weather-condition.hail {
+    background-color: #AADDEE;
 }
 
-.weather-square.grassy-terrain {
-    background-color: lightgreen;
+.weather-condition.deltastream {
+    background-color: #AAAAAA;
 }
 
-.weather-square.misty-terrain {
-    background-color: lightgray;
+.weather-condition.misty-terrain {
+    background-color: #EEAACC;
 }
 
-.weather-square.electric-terrain {
-    background-color: lightyellow;
+.weather-condition.electric-terrain {
+    background-color: #EEEEAA;
 }
 
-.weather-square.psychic-terrain {
-    background-color: plum;
+.weather-condition.grassy-terrain {
+    background-color: #CCEEAA;
+}
+
+.weather-condition.psychic-terrain {
+    background-color: #CCAAEE;
+}
+
+.weather-condition.gravity,
+.weather-condition.magic-room,
+.weather-condition.wonder-room {
+    background-color: #DDAAEE;
 }
