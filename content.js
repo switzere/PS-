@@ -1,13 +1,15 @@
 // Send the toggle state to the page when the content script loads
 
-chrome.storage.sync.get(['ps-addon-enabled', 'ps-toggle-stats', 'ps-toggle-movesets'], function(result) {
+chrome.storage.sync.get(['ps-addon-enabled', 'ps-toggle-stats', 'ps-toggle-movesets', 'ps-toggle-typechart'], function(result) {
   const addonEnabled = !!result['ps-addon-enabled'];
   const statsEnabled = !!result['ps-toggle-stats'];
   const movesetsEnabled = !!result['ps-toggle-movesets'];
+  const typeChartEnabled = !!result['ps-toggle-typechart'];
 
   window.postMessage({type: 'PS_ADDON_ENABLED', value: addonEnabled}, '*');
   window.postMessage({type: 'PS_TOGGLE_STATS', value: statsEnabled}, '*');
   window.postMessage({type: 'PS_TOGGLE_MOVESETS', value: movesetsEnabled}, '*');
+  window.postMessage({type: 'PS_TOGGLE_TYPECHART', value: typeChartEnabled}, '*');
 });
 // Listen for changes to the toggle and send updates to the page
 
@@ -24,6 +26,10 @@ chrome.storage.onChanged.addListener(function(changes, area) {
     if (changes['ps-toggle-movesets']) {
       const movesetsEnabled = !!changes['ps-toggle-movesets'].newValue;
       window.postMessage({type: 'PS_TOGGLE_MOVESETS', value: movesetsEnabled}, '*');
+    }
+    if (changes['ps-toggle-typechart']) {
+      const typeChartEnabled = !!changes['ps-toggle-typechart'].newValue;
+      window.postMessage({type: 'PS_TOGGLE_TYPECHART', value: typeChartEnabled}, '*');
     }
   }
 
@@ -53,6 +59,10 @@ ele.onload = function() {
   chrome.storage.sync.get(['ps-toggle-movesets'], function(result) {
     const movesetsEnabled = typeof result['ps-toggle-movesets'] === 'undefined' ? false : !!result['ps-toggle-movesets'];
     window.postMessage({type: 'PS_TOGGLE_MOVESETS', value: movesetsEnabled}, '*');
+  });
+  chrome.storage.sync.get(['ps-toggle-typechart'], function(result) {
+    const typeChartEnabled = typeof result['ps-toggle-typechart'] === 'undefined' ? false : !!result['ps-toggle-typechart'];
+    window.postMessage({type: 'PS_TOGGLE_TYPECHART', value: typeChartEnabled}, '*');
   });
 };
 document.body.appendChild(ele);

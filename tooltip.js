@@ -8,6 +8,7 @@ const originalShowMoveTooltip = BattleTooltips.prototype.showMoveTooltip;
 let addonEnabled = false; // default
 let toggleStats = false;
 let toggleMovesets = false;
+let toggleTypeChart = false;
 
 window.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'PS_ADDON_ENABLED') {
@@ -19,6 +20,9 @@ window.addEventListener('message', function(event) {
   } 
   if (event.data && event.data.type === 'PS_TOGGLE_MOVESETS') {
     toggleMovesets = event.data.value === true;
+  }
+  if (event.data && event.data.type === 'PS_TOGGLE_TYPECHART') {
+    toggleTypeChart = event.data.value === true;
   }
 });
 
@@ -178,6 +182,7 @@ function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, 
 
   // Use typeEffectivenessChart to calculate type effectiveness
   let typeEffectiveness = typeEffectivenessChart[move.type][foeType1] * (foeType2 ? typeEffectivenessChart[move.type][foeType2] : 1);
+  //let typeEffectiveness =  ShowdownEnhancedTooltip.BattleTypeChart[foeType1].damageGiven[move.type] * (foeType2 ? ShowdownEnhancedTooltip.BattleTypeChart[foeType2].damageGiven[move.type] : 1);
 
   let stab = move.type === activeType1 || move.type === activeType2 || move.type === terraType ? 1.5 : 1;
 
@@ -227,9 +232,10 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
 
   //calculateModifiedStats(clientPokemon: Pokemon | null, serverPokemon: ServerPokemon, statStagesOnly?: boolean) {
 
-  // if not users pokemon
+  // if not users pokemon (server pokemon)
   if (!serverPokemon) {
-    if (!clientPokemon) throw new Error('Must pass either clientPokemon or serverPokemon');
+    // if (!clientPokemon) throw new Error('Must pass either clientPokemon or serverPokemon');
+    if (!clientPokemon) return text;
 
     text += '<hr style="border: 1px solid black; margin: 5px 0;">';
 
@@ -243,6 +249,7 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
     let modifiedStats = boostStats(stats, boosts);
 
     let buf = '';
+
 
     if (toggleStats) {
       buf += '<p>';
@@ -282,6 +289,63 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
 
       buf += '</p>';
 
+    }
+
+    if (toggleTypeChart) {
+      let type1 = baseSpecies.types[0];
+      let type2 = baseSpecies.types[1];
+      if (clientPokemon.terastallized) {
+        type1 = clientPokemon.terastallized;
+        type2 = null;
+      }
+      // buf += '<p>';
+      // buf += `Type: <span class="PS-type-color PS-type-${type1}"></span>${type1}`;
+      // if (type2) {
+      //   buf += ` / <span class="PS-type-color PS-type-${type2}"></span>${type2}`;
+      // }
+      // buf += '</p>';
+
+      //weaknesses
+      let weaknesses = [];
+      for (let type in typeEffectivenessChart) {
+        let effectiveness = typeEffectivenessChart[type][type1] * (type2 ? typeEffectivenessChart[type][type2] : 1);
+        if (effectiveness > 1) {
+          weaknesses.push(
+            `<span>${typeEffectivenessChart[type].icon}</span>`
+          );
+        }
+      }
+      if (weaknesses.length > 0) {
+        buf += `<p>Weaknesses: ${weaknesses.join(' ')}</p>`;
+      }
+
+      //resistances
+      let resistances = [];
+      for (let type in typeEffectivenessChart) {
+        let effectiveness = typeEffectivenessChart[type][type1] * (type2 ? typeEffectivenessChart[type][type2] : 1);
+        if (effectiveness < 1 && effectiveness > 0) {
+          resistances.push(
+            `<span>${typeEffectivenessChart[type].icon}</span>`
+          );
+        }
+      }
+      if (resistances.length > 0) {
+        buf += `<p>Resistances: ${resistances.join(' ')}</p>`;
+      }
+
+      //immunities
+      let immunities = [];
+      for (let type in typeEffectivenessChart) {
+        let effectiveness = typeEffectivenessChart[type][type1] * (type2 ? typeEffectivenessChart[type][type2] : 1);
+        if (effectiveness === 0) {
+          immunities.push(
+            `<span>${typeEffectivenessChart[type].icon}</span>`
+          );
+        }
+      }
+      if (immunities.length > 0) {
+        buf += `<p>Immunities: ${immunities.join(' ')}</p>`;
+      }
     }
 
     if (toggleMovesets) {
@@ -413,7 +477,96 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
     // text += buf;
   }
   else {
-    //placeholder for your pokemon
+    //serverPokemon guaranteed to exist, clientPokemon could
+    //users pokemon
+
+    var baseSpecies;
+    var stats;
+    var boosts;
+    var type1, type2;
+
+    if (clientPokemon) {
+      baseSpecies = clientPokemon.getBaseSpecies();
+      //let baseStats = baseSpecies.baseStats;
+      stats = calculateStats(baseSpecies, serverPokemon.level);
+      boosts = serverPokemon.boosts;
+
+      type1 = baseSpecies.types[0];
+      type2 = baseSpecies.types[1];
+    }
+    else if (serverPokemon) {
+      stats = serverPokemon.stats;
+      boosts = {}
+
+      let speciesForme = serverPokemon.speciesForme.toLowerCase();
+
+      baseSpecies = BattlePokedex[speciesForme];
+
+      type1 = baseSpecies.types[0];
+      type2 = baseSpecies.types[1];
+    }
+
+
+    //let modifiedStats = boostStats(stats, boosts);
+
+    let buf = '';
+
+    buf += '<hr style="border: 1px solid black; margin: 5px 0;">';
+
+
+    if (toggleTypeChart) {
+      if (serverPokemon.terastallized) {
+        type1 = serverPokemon.terastallized;
+        type2 = null;
+      }
+
+            //weaknesses
+      let weaknesses = [];
+      for (let type in typeEffectivenessChart) {
+        let effectiveness = typeEffectivenessChart[type][type1] * (type2 ? typeEffectivenessChart[type][type2] : 1);
+        if (effectiveness > 1) {
+          weaknesses.push(
+            `<span>${typeEffectivenessChart[type].icon}</span>`
+          );
+        }
+      }
+      if (weaknesses.length > 0) {
+        buf += `<p>Weaknesses: ${weaknesses.join(' ')}</p>`;
+      }
+
+      //resistances
+      let resistances = [];
+      for (let type in typeEffectivenessChart) {
+        let effectiveness = typeEffectivenessChart[type][type1] * (type2 ? typeEffectivenessChart[type][type2] : 1);
+        if (effectiveness < 1 && effectiveness > 0) {
+          resistances.push(
+            `<span>${typeEffectivenessChart[type].icon}</span>`
+          );
+        }
+      }
+      if (resistances.length > 0) {
+        buf += `<p>Resistances: ${resistances.join(' ')}</p>`;
+      }
+
+      //immunities
+      let immunities = [];
+      for (let type in typeEffectivenessChart) {
+        let effectiveness = typeEffectivenessChart[type][type1] * (type2 ? typeEffectivenessChart[type][type2] : 1);
+        if (effectiveness === 0) {
+          immunities.push(
+            `<span>${typeEffectivenessChart[type].icon}</span>`
+          );
+        }
+      }
+      if (immunities.length > 0) {
+        buf += `<p>Immunities: ${immunities.join(' ')}</p>`;
+      }
+    }
+
+
+
+
+    text += buf;
   }
 
 
@@ -434,7 +587,9 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
   let [moveType, category] = this.getMoveType(move, value, gmaxMove || isZOrMax === 'maxmove');
   let categoryDiff = move.category !== category;
 
-  text += '<hr style="border: 1px solid black; margin: 5px 0;">';
+  let buf = '';
+
+  buf += '<hr style="border: 1px solid black; margin: 5px 0;">';
 
   // text += '<h2>' + move.name + '<br />';
 
@@ -464,12 +619,32 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
   //turn into percentage
   damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
   damageRange[1] = (damageRange[1] / foeStats.hp * 100).toFixed(1);
-  text += damageRange[0] + "% - " + damageRange[1] + "%";
+  buf += damageRange[0] + "% - " + damageRange[1] + "%";
 
+  text += buf;
 
   return text;
 }
 
+
+
+
+
+//if I can get var BattleRoom = this.BattleRoom = ConsoleRoom.extend({
+//		forfeit: function () {
+		// 	this.send('/forfeit');
+		// },
+// then I can use the showdown commands like /dt sunny day ect
+
+//use ShowdownEnhancedTooltip.BattleTypeChart
+// ShowdownEnhancedTooltip.BattleTypeChart = {
+//   // defending type
+//   "Bug": {
+//     damageGiven: {
+//       // attacking type : effectivenessMultiplier
+//       "Bug": 1,
+//       "Dark": 1,
+//       "Dragon": 1,
 
 const typeEffectivenessChart = {
   "Normal": {
@@ -490,7 +665,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Normal.png" alt="Normal" height="14" width="32" class="pixelated">'
   },
   "Fire": {
     "Normal": 1,
@@ -510,7 +686,8 @@ const typeEffectivenessChart = {
     "Dragon": 0.5,
     "Dark": 1,
     "Steel": 2,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Fire.png" alt="Fire" height="14" width="32" class="pixelated">'
   },
   "Water": {
     "Normal": 1,
@@ -530,7 +707,8 @@ const typeEffectivenessChart = {
     "Dragon": 0.5,
     "Dark": 1,
     "Steel": 1,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Water.png" alt="Water" height="14" width="32" class="pixelated">'
   },
   "Electric": {
     "Normal": 1,
@@ -550,7 +728,8 @@ const typeEffectivenessChart = {
     "Dragon": 0.5,
     "Dark": 1,
     "Steel": 1,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Electric.png" alt="Electric" height="14" width="32" class="pixelated">'
   },
   "Grass": {
     "Normal": 1,
@@ -570,7 +749,8 @@ const typeEffectivenessChart = {
     "Dragon": 0.5,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Grass.png" alt="Grass" height="14" width="32" class="pixelated">'
   },
   "Ice": {
     "Normal": 1,
@@ -590,7 +770,8 @@ const typeEffectivenessChart = {
     "Dragon": 2,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Ice.png" alt="Ice" height="14" width="32" class="pixelated">'
   },
   "Fighting": {
     "Normal": 2,
@@ -610,7 +791,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 2,
     "Steel": 2,
-    "Fairy": 0.5
+    "Fairy": 0.5,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Fighting.png" alt="Fighting" height="14" width="32" class="pixelated">'
   },
   "Poison": {
     "Normal": 1,
@@ -630,7 +812,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 1,
     "Steel": 0,
-    "Fairy": 2
+    "Fairy": 2,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Poison.png" alt="Poison" height="14" width="32" class="pixelated">'
   },
   "Ground": {
     "Normal": 1,
@@ -650,7 +833,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 1,
     "Steel": 2,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Ground.png" alt="Ground" height="14" width="32" class="pixelated">'
   },
   "Flying": {
     "Normal": 1,
@@ -670,7 +854,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Flying.png" alt="Flying" height="14" width="32" class="pixelated">'
   },
   "Psychic": {
     "Normal": 1,
@@ -690,7 +875,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 0,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Psychic.png" alt="Psychic" height="14" width="32" class="pixelated">'
   },
   "Bug": {
     "Normal": 1,
@@ -710,7 +896,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 2,
     "Steel": 0.5,
-    "Fairy": 0.5
+    "Fairy": 0.5,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Bug.png" alt="Bug" height="14" width="32" class="pixelated">'
   },
   "Rock": {
     "Normal": 1,
@@ -730,7 +917,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Rock.png" alt="Rock" height="14" width="32" class="pixelated">'
   },
   "Ghost": {
     "Normal": 0,
@@ -750,7 +938,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 0.5,
     "Steel": 1,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Ghost.png" alt="Ghost" height="14" width="32" class="pixelated">'
   },
   "Dragon": {
     "Normal": 1,
@@ -770,7 +959,8 @@ const typeEffectivenessChart = {
     "Dragon": 2,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 0
+    "Fairy": 0,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Dragon.png" alt="Dragon" height="14" width="32" class="pixelated">'
   },
   "Dark": {
     "Normal": 1,
@@ -790,7 +980,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 0.5,
     "Steel": 1,
-    "Fairy": 0.5
+    "Fairy": 0.5,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Dark.png" alt="Dark" height="14" width="32" class="pixelated">'
   },
   "Steel": {
     "Normal": 1,
@@ -810,7 +1001,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 2
+    "Fairy": 2,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Steel.png" alt="Steel" height="14" width="32" class="pixelated">'
   },
   "Fairy": {
     "Normal": 1,
@@ -830,10 +1022,96 @@ const typeEffectivenessChart = {
     "Dragon": 2,
     "Dark": 2,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Fairy.png" alt="Fairy" height="14" width="32" class="pixelated">'
   }
 };
 
 
 BattleTooltips.prototype.showPokemonTooltip = ShowdownEnhancedTooltip.showPokemonTooltip;
 BattleTooltips.prototype.showMoveTooltip = ShowdownEnhancedTooltip.showMoveTooltip;
+
+//BattleTooltips.prototype
+
+// {lockTooltip: ƒ, handleTouchEnd: ƒ, listen: ƒ, showTooltip: ƒ, placeTooltip: ƒ, …}
+// calculateModifiedStats
+// : 
+// ƒ calculateModifiedStats(clientPokemon,serverPokemon,statStagesOnly)
+// getAllyAbility
+// : 
+// ƒ getAllyAbility(ally)
+// getItemBoost
+// : 
+// ƒ getItemBoost(move,value,moveType)
+// getMaxMoveFromType
+// : 
+// ƒ getMaxMoveFromType(type,gmaxMove)
+// getMoveAccuracy
+// : 
+// ƒ getMoveAccuracy(move,value,target)
+// getMoveBasePower
+// : 
+// ƒ getMoveBasePower(move,moveType,value)
+// getMoveType
+// : 
+// ƒ getMoveType( move,value,forMaxMove)
+// getPPUseText
+// : 
+// ƒ getPPUseText(moveTrackRow,showKnown)
+// getPokemonAbilityData
+// : 
+// ƒ getPokemonAbilityData(clientPokemon,serverPokemon)
+// getPokemonAbilityText
+// : 
+// ƒ getPokemonAbilityText( clientPokemon, serverPokemon, isActive, hidePossible)
+// getPokemonTypes
+// : 
+// ƒ getPokemonTypes(pokemon)
+// getSpeedRange
+// : 
+// ƒ getSpeedRange(pokemon)
+// getStatusZMoveEffect
+// : 
+// ƒ getStatusZMoveEffect(move)
+// handleTouchEnd
+// : 
+// ƒ handleTouchEnd(e)
+// hideTooltip
+// : 
+// ƒ hideTooltip()
+// listen
+// : 
+// ƒ listen(elem)
+// lockTooltip
+// : 
+// ƒ lockTooltip()
+// placeTooltip
+// : 
+// ƒ placeTooltip(innerHTML,hoveredElem,notRelativeToParent,type)
+// pokemonHasClones
+// : 
+// ƒ pokemonHasClones(pokemon)
+// pokemonHasType
+// : 
+// ƒ pokemonHasType(pokemon,type,types)
+// ppUsed
+// : 
+// ƒ ppUsed(move,pokemon)
+// renderStats
+// : 
+// ƒ renderStats(clientPokemon,serverPokemon,short)
+// showFieldTooltip
+// : 
+// ƒ showFieldTooltip()
+// showMoveTooltip
+// : 
+// ƒ showMoveTooltip(move, isZOrMax, pokemon, serverPokemon, gmaxMove)
+// showPokemonTooltip
+// : 
+// ƒ showPokemonTooltip(clientPokemon, serverPokemon, isActive, illusionIndex)
+// showTooltip
+// : 
+// ƒ showTooltip(elem)
+// constructor
+// : 
+// ƒ BattleTooltips(battle)

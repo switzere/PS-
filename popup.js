@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const toggleAddon = document.getElementById('toggleAddon');
   const toggleStats = document.getElementById('toggleStats');
   const toggleMovesets = document.getElementById('toggleMovesets');
+  const toggleTypeChart = document.getElementById('toggleTypeChart');
 
   // Function to update the dependent toggles
   function updateDependentToggles() {
@@ -26,15 +27,18 @@ document.addEventListener('DOMContentLoaded', function() {
     updateDependentToggles(); // Update dependent toggles on load
   });
 
-  // Initialize toggleStats state
   chrome.storage.sync.get(['ps-toggle-stats'], function(result) {
     toggleStats.checked = !!result['ps-toggle-stats'];
   });
 
-  // Initialize toggleMovesets state
   chrome.storage.sync.get(['ps-toggle-movesets'], function(result) {
     toggleMovesets.checked = !!result['ps-toggle-movesets'];
   });
+
+  chrome.storage.sync.get(['ps-toggle-typechart'], function(result) {
+    toggleTypeChart.checked = !!result['ps-toggle-typechart'];
+  });
+
 
   // Listen for changes to toggleAddon
   toggleAddon.addEventListener('change', function() {
@@ -44,13 +48,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Listen for changes to toggleStats
   toggleStats.addEventListener('change', function() {
     chrome.storage.sync.set({'ps-toggle-stats': toggleStats.checked});
   });
 
-  // Listen for changes to toggleMovesets
   toggleMovesets.addEventListener('change', function() {
     chrome.storage.sync.set({'ps-toggle-movesets': toggleMovesets.checked});
+  });
+
+  toggleTypeChart.addEventListener('change', function() {
+    chrome.storage.sync.set({'ps-toggle-typechart': toggleTypeChart.checked});
   });
 });
