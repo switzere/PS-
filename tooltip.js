@@ -6,11 +6,23 @@ const originalShowPokemonTooltip = BattleTooltips.prototype.showPokemonTooltip;
 const originalShowMoveTooltip = BattleTooltips.prototype.showMoveTooltip;
 
 let addonEnabled = false; // default
+let toggleStats = false;
+let toggleMovesets = false;
+let toggleTypeChart = false;
 
 window.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'PS_ADDON_ENABLED') {
-    addonEnabled = event.data.value === true;
     console.log('[Injected] addonEnabled set to', addonEnabled);
+    addonEnabled = event.data.value === true;
+  }
+  if (event.data && event.data.type === 'PS_TOGGLE_STATS') {
+    toggleStats = event.data.value === true;
+  } 
+  if (event.data && event.data.type === 'PS_TOGGLE_MOVESETS') {
+    toggleMovesets = event.data.value === true;
+  }
+  if (event.data && event.data.type === 'PS_TOGGLE_TYPECHART') {
+    toggleTypeChart = event.data.value === true;
   }
 });
 
@@ -170,6 +182,7 @@ function calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, 
 
   // Use typeEffectivenessChart to calculate type effectiveness
   let typeEffectiveness = typeEffectivenessChart[move.type][foeType1] * (foeType2 ? typeEffectivenessChart[move.type][foeType2] : 1);
+  //let typeEffectiveness =  ShowdownEnhancedTooltip.BattleTypeChart[foeType1].damageGiven[move.type] * (foeType2 ? ShowdownEnhancedTooltip.BattleTypeChart[foeType2].damageGiven[move.type] : 1);
 
   let stab = move.type === activeType1 || move.type === activeType2 || move.type === terraType ? 1.5 : 1;
 
@@ -219,9 +232,10 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
 
   //calculateModifiedStats(clientPokemon: Pokemon | null, serverPokemon: ServerPokemon, statStagesOnly?: boolean) {
 
-  // if not users pokemon
+  // if not users pokemon (server pokemon)
   if (!serverPokemon) {
-    if (!clientPokemon) throw new Error('Must pass either clientPokemon or serverPokemon');
+    // if (!clientPokemon) throw new Error('Must pass either clientPokemon or serverPokemon');
+    if (!clientPokemon) return text;
 
     text += '<hr style="border: 1px solid black; margin: 5px 0;">';
 
@@ -234,148 +248,216 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
 
     let modifiedStats = boostStats(stats, boosts);
 
-    let buf = '<p>';
+    let buf = '';
 
-    for (const statName of Object.keys(stats)) {
-      if (this.battle.gen === 1 && statName === 'spd') continue;
-      if (statName === 'hp') continue;
-      let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
-      buf += statName === 'atk' ? '<small>' : '<small> / ';
-      buf += '' + BattleText[statLabel].statShortName + '&nbsp;</small>';
-      buf += '' + stats[statName];
-      //if (modifiedStats[statName] !== stats[statName]) hasModifiedStat = true;
-    }
 
-    buf += '</p>';
-
-    //if the stats were modified
-    if (clientPokemon.boosts) {
-      buf += '<p><small>(After stat modifiers:)</small></p>';
+    if (toggleStats) {
       buf += '<p>';
-      for (const statName of Object.keys(modifiedStats)) {
+      console.log("stats enabled");
+
+      for (const statName of Object.keys(stats)) {
         if (this.battle.gen === 1 && statName === 'spd') continue;
         if (statName === 'hp') continue;
         let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
         buf += statName === 'atk' ? '<small>' : '<small> / ';
         buf += '' + BattleText[statLabel].statShortName + '&nbsp;</small>';
-        if (modifiedStats[statName] === stats[statName]) {
-          buf += '' + modifiedStats[statName];
-        } else if (modifiedStats[statName] < stats[statName]) {
-          buf += '<strong class="stat-lowered">' + modifiedStats[statName] + '</strong>';
-        } else if (modifiedStats[statName] > stats[statName]) {
-          buf += '<strong class="stat-boosted">' + modifiedStats[statName] + '</strong>';
-        }
+        buf += '' + stats[statName];
+        //if (modifiedStats[statName] !== stats[statName]) hasModifiedStat = true;
       }
-    }
 
-    buf += '</p>';
+      buf += '</p>';
 
-    let sets = randSets[baseSpecies.name]
-    //if sets are undefined
-    if (!sets) {
-      sets = randSets[baseSpecies.baseSpecies];
-    }
-
-    buf += '<p>';
-
-    // Get revealed/used moves for the opponent's Pokémon from moveTrack
-    let revealedMoves = [];
-    if (clientPokemon.moveTrack && Array.isArray(clientPokemon.moveTrack)) {
-      revealedMoves = clientPokemon.moveTrack.map(m => m[0].toLowerCase());
-    }
-
-    //console.log(sets['roles']);
-
-    // Only keep roles that contain all revealed moves
-    if (revealedMoves.length > 0) {
-      for (const roleName of Object.keys(sets['roles'])) {
-        const role = sets['roles'][roleName];
-        // If any revealed move is not in this role's moves, remove the role
-        if (!revealedMoves.every(m => role["moves"].map(x => x.toLowerCase()).includes(m))) {
-          delete sets['roles'][roleName];
-        }
-      }
-    }
-
-    //for all roles check if only 1 possibility for item
-    let uniqueItems = [...new Set(Object.values(sets['roles']).flatMap(role => role.items.map(item => item.toLowerCase().replace(/\s+/g, ''))))];
-
-    //for all abilities check if only 1 possibility for ability
-    let uniqueAbilities = [...new Set(Object.values(sets['roles']).flatMap(role => role.abilities.map(ability => ability.toLowerCase().replace(/\s+/g, ''))))];
-
-    for (const roleName in sets['roles']) {
-        const role = sets['roles'][roleName];
+      //if the stats were modified
+      if (clientPokemon.boosts) {
+        buf += '<p><small>(After stat modifiers:)</small></p>';
         buf += '<p>';
-        buf += `<strong>${roleName}</strong><br>`;
-        buf += `Abilities: ${role["abilities"].join(', ')}<br>`;
-        buf += `Items: ${role["items"] && role["items"].length > 0 ? role["items"].join(', ') : 'None'}<br>`;
-        buf += `Tera Types: ${role["teraTypes"].join(', ')}<br>`;
-        buf += `Moves: <br>`;
-
-        for (const moveName of role["moves"]) {
-          let move = this.battle.dex.moves.get(moveName);
-          let moveTypeClass = `PS-type-${move.type}`;
-
-          let dRText = '';
-          let colorBox = `<span class="PS-type-color PS-type-${move.type}"></span>`;
-          let moveSpan = `${colorBox}${moveName} `;
-          if (revealedMoves.includes(moveName.toLowerCase())) {
-            dRText = `<strong>${moveSpan}</strong>`;
-          } else {
-            dRText = moveSpan;
+        for (const statName of Object.keys(modifiedStats)) {
+          if (this.battle.gen === 1 && statName === 'spd') continue;
+          if (statName === 'hp') continue;
+          let statLabel = this.battle.gen === 1 && statName === 'spa' ? 'spc' : statName;
+          buf += statName === 'atk' ? '<small>' : '<small> / ';
+          buf += '' + BattleText[statLabel].statShortName + '&nbsp;</small>';
+          if (modifiedStats[statName] === stats[statName]) {
+            buf += '' + modifiedStats[statName];
+          } else if (modifiedStats[statName] < stats[statName]) {
+            buf += '<strong class="stat-lowered">' + modifiedStats[statName] + '</strong>';
+          } else if (modifiedStats[statName] > stats[statName]) {
+            buf += '<strong class="stat-boosted">' + modifiedStats[statName] + '</strong>';
           }
-          if (clientPokemon.side.foe.active[0]) {
-            let foePokemonBaseSpecies = clientPokemon.side.foe.active[0].getBaseSpecies();
-            //let baseStats = baseSpecies.baseStats;
-            let foeStats = calculateStats(foePokemonBaseSpecies, clientPokemon.side.foe.active[0].level);
-            foeStats = boostStats(foeStats, clientPokemon.side.foe.active[0].boosts);
-          
-            //console.log(clientPokemon.name);
-            // Use the getBaseSpecies method
-            let activePokemonBaseSpecies = clientPokemon.getBaseSpecies();
-            //let baseStats = baseSpecies.baseStats;
-            let activeStats = calculateStats(activePokemonBaseSpecies, clientPokemon.level);
-            activeStats = boostStats(activeStats, clientPokemon.boosts);
-            let damageRange;
-
-            //if opponent has assault vest as it's only item, add the item to the clientPokemon.side.foe.active[0]
-            if(uniqueItems.length === 1) {
-              clientPokemon.item = uniqueItems[0];
-            }
-            //if opponent has only 1 ability, add the ability to the clientPokemon.side.foe.active[0]
-            if(uniqueAbilities.length === 1) {
-              clientPokemon.ability = uniqueAbilities[0];
-            }
-
-            //TODO: figure out how to get your own pokemon in this tooltip
-
-            console.log("My Pokemon: ");
-            console.log(this.battle.myPokemon);
-
-            damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, clientPokemon, clientPokemon.side.foe.active[0]);
-
-              //console.log(move.name + " damage range: " + damageRange);
-
-            //turn into percentage
-            damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
-            damageRange[1] = (damageRange[1] / foeStats.hp * 100).toFixed(1);
-            
-            if (isNaN(damageRange[0]) || isNaN(damageRange[1])) {
-              dRText += 'N/A';
-            } else {
-              dRText += damageRange[0] + "% - " + damageRange[1] + "%";
-            }
-
-            //this.showMoveTooltip(move, false, clientPokemon, clientPokemon.side.foe.active[0], false);
-
-            
-          }
-          buf += dRText + '<br>';
-
         }
-        buf += '</p>';
+      }
+
+      buf += '</p>';
+
     }
-    buf += '</p>';
+
+    if (toggleTypeChart) {
+      let type1 = baseSpecies.types[0];
+      let type2 = baseSpecies.types[1];
+      if (clientPokemon.terastallized) {
+        type1 = clientPokemon.terastallized;
+        type2 = null;
+      }
+      // buf += '<p>';
+      // buf += `Type: <span class="PS-type-color PS-type-${type1}"></span>${type1}`;
+      // if (type2) {
+      //   buf += ` / <span class="PS-type-color PS-type-${type2}"></span>${type2}`;
+      // }
+      // buf += '</p>';
+
+      //weaknesses
+      let weaknesses = [];
+      for (let type in typeEffectivenessChart) {
+        let effectiveness = typeEffectivenessChart[type][type1] * (type2 ? typeEffectivenessChart[type][type2] : 1);
+        if (effectiveness > 1) {
+          weaknesses.push(
+            `<span>${typeEffectivenessChart[type].icon}</span>`
+          );
+        }
+      }
+      if (weaknesses.length > 0) {
+        buf += `<p>Weaknesses: ${weaknesses.join(' ')}</p>`;
+      }
+
+      //resistances
+      let resistances = [];
+      for (let type in typeEffectivenessChart) {
+        let effectiveness = typeEffectivenessChart[type][type1] * (type2 ? typeEffectivenessChart[type][type2] : 1);
+        if (effectiveness < 1 && effectiveness > 0) {
+          resistances.push(
+            `<span>${typeEffectivenessChart[type].icon}</span>`
+          );
+        }
+      }
+      if (resistances.length > 0) {
+        buf += `<p>Resistances: ${resistances.join(' ')}</p>`;
+      }
+
+      //immunities
+      let immunities = [];
+      for (let type in typeEffectivenessChart) {
+        let effectiveness = typeEffectivenessChart[type][type1] * (type2 ? typeEffectivenessChart[type][type2] : 1);
+        if (effectiveness === 0) {
+          immunities.push(
+            `<span>${typeEffectivenessChart[type].icon}</span>`
+          );
+        }
+      }
+      if (immunities.length > 0) {
+        buf += `<p>Immunities: ${immunities.join(' ')}</p>`;
+      }
+    }
+
+    if (toggleMovesets) {
+
+      let sets = randSets[baseSpecies.name]
+      //if sets are undefined
+      if (!sets) {
+        sets = randSets[baseSpecies.baseSpecies];
+      }
+      // Get revealed/used moves for the opponent's Pokémon from moveTrack
+      let revealedMoves = [];
+      if (clientPokemon.moveTrack && Array.isArray(clientPokemon.moveTrack)) {
+        revealedMoves = clientPokemon.moveTrack.map(m => m[0].toLowerCase());
+      }
+
+      //console.log(sets['roles']);
+
+      // Only keep roles that contain all revealed moves
+      if (revealedMoves.length > 0) {
+        for (const roleName of Object.keys(sets['roles'])) {
+          const role = sets['roles'][roleName];
+          // If any revealed move is not in this role's moves, remove the role
+          if (!revealedMoves.every(m => role["moves"].map(x => x.toLowerCase()).includes(m))) {
+            delete sets['roles'][roleName];
+          }
+        }
+      }
+
+      //for all roles check if only 1 possibility for item
+      let uniqueItems = [...new Set(Object.values(sets['roles']).flatMap(role => role.items.map(item => item.toLowerCase().replace(/\s+/g, ''))))];
+
+      //for all abilities check if only 1 possibility for ability
+      let uniqueAbilities = [...new Set(Object.values(sets['roles']).flatMap(role => role.abilities.map(ability => ability.toLowerCase().replace(/\s+/g, ''))))];
+
+
+      //buf += '<p>';
+
+      for (const roleName in sets['roles']) {
+          const role = sets['roles'][roleName];
+          buf += '<p>';
+          buf += `<strong>${roleName}</strong><br>`;
+          buf += `Abilities: ${role["abilities"].join(', ')}<br>`;
+          buf += `Items: ${role["items"] && role["items"].length > 0 ? role["items"].join(', ') : 'None'}<br>`;
+          buf += `Tera Types: ${role["teraTypes"].join(', ')}<br>`;
+          buf += `Moves: <br>`;
+
+          for (const moveName of role["moves"]) {
+            let move = this.battle.dex.moves.get(moveName);
+            let moveTypeClass = `PS-type-${move.type}`;
+
+            let dRText = '';
+            let colorBox = `<span class="PS-type-color PS-type-${move.type}"></span>`;
+            let moveSpan = `${colorBox}${moveName} `;
+            if (revealedMoves.includes(moveName.toLowerCase())) {
+              dRText = `<strong>${moveSpan}</strong>`;
+            } else {
+              dRText = moveSpan;
+            }
+            if (clientPokemon.side.foe.active[0]) {
+              let foePokemonBaseSpecies = clientPokemon.side.foe.active[0].getBaseSpecies();
+              //let baseStats = baseSpecies.baseStats;
+              let foeStats = calculateStats(foePokemonBaseSpecies, clientPokemon.side.foe.active[0].level);
+              foeStats = boostStats(foeStats, clientPokemon.side.foe.active[0].boosts);
+            
+              //console.log(clientPokemon.name);
+              // Use the getBaseSpecies method
+              let activePokemonBaseSpecies = clientPokemon.getBaseSpecies();
+              //let baseStats = baseSpecies.baseStats;
+              let activeStats = calculateStats(activePokemonBaseSpecies, clientPokemon.level);
+              activeStats = boostStats(activeStats, clientPokemon.boosts);
+              let damageRange;
+
+              //if opponent has assault vest as it's only item, add the item to the clientPokemon.side.foe.active[0]
+              if(uniqueItems.length === 1) {
+                clientPokemon.item = uniqueItems[0];
+              }
+              //if opponent has only 1 ability, add the ability to the clientPokemon.side.foe.active[0]
+              if(uniqueAbilities.length === 1) {
+                clientPokemon.ability = uniqueAbilities[0];
+              }
+
+              //TODO: figure out how to get your own pokemon in this tooltip
+
+              console.log("My Pokemon: ");
+              console.log(this.battle.myPokemon);
+
+              damageRange = calculateDamage(move, activeStats, foeStats, activePokemonBaseSpecies, foePokemonBaseSpecies, clientPokemon, clientPokemon.side.foe.active[0]);
+
+                //console.log(move.name + " damage range: " + damageRange);
+
+              //turn into percentage
+              damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
+              damageRange[1] = (damageRange[1] / foeStats.hp * 100).toFixed(1);
+              
+              if (isNaN(damageRange[0]) || isNaN(damageRange[1])) {
+                dRText += 'N/A';
+              } else {
+                dRText += damageRange[0] + "% - " + damageRange[1] + "%";
+              }
+
+              //this.showMoveTooltip(move, false, clientPokemon, clientPokemon.side.foe.active[0], false);
+
+              
+            }
+            buf += dRText + '<br>';
+
+          }
+          buf += '</p>';
+      }
+
+    }
+    //buf += '</p>';
 
 
     // buf += '<p>';
@@ -395,7 +477,96 @@ ShowdownEnhancedTooltip.showPokemonTooltip = function showPokemonTooltip(clientP
     // text += buf;
   }
   else {
-    //placeholder for your pokemon
+    //serverPokemon guaranteed to exist, clientPokemon could
+    //users pokemon
+
+    var baseSpecies;
+    var stats;
+    var boosts;
+    var type1, type2;
+
+    if (clientPokemon) {
+      baseSpecies = clientPokemon.getBaseSpecies();
+      //let baseStats = baseSpecies.baseStats;
+      stats = calculateStats(baseSpecies, serverPokemon.level);
+      boosts = serverPokemon.boosts;
+
+      type1 = baseSpecies.types[0];
+      type2 = baseSpecies.types[1];
+    }
+    else if (serverPokemon) {
+      stats = serverPokemon.stats;
+      boosts = {}
+
+      let speciesForme = serverPokemon.speciesForme.toLowerCase();
+
+      baseSpecies = BattlePokedex[speciesForme];
+
+      type1 = baseSpecies.types[0];
+      type2 = baseSpecies.types[1];
+    }
+
+
+    //let modifiedStats = boostStats(stats, boosts);
+
+    let buf = '';
+
+    buf += '<hr style="border: 1px solid black; margin: 5px 0;">';
+
+
+    if (toggleTypeChart) {
+      if (serverPokemon.terastallized) {
+        type1 = serverPokemon.terastallized;
+        type2 = null;
+      }
+
+            //weaknesses
+      let weaknesses = [];
+      for (let type in typeEffectivenessChart) {
+        let effectiveness = typeEffectivenessChart[type][type1] * (type2 ? typeEffectivenessChart[type][type2] : 1);
+        if (effectiveness > 1) {
+          weaknesses.push(
+            `<span>${typeEffectivenessChart[type].icon}</span>`
+          );
+        }
+      }
+      if (weaknesses.length > 0) {
+        buf += `<p>Weaknesses: ${weaknesses.join(' ')}</p>`;
+      }
+
+      //resistances
+      let resistances = [];
+      for (let type in typeEffectivenessChart) {
+        let effectiveness = typeEffectivenessChart[type][type1] * (type2 ? typeEffectivenessChart[type][type2] : 1);
+        if (effectiveness < 1 && effectiveness > 0) {
+          resistances.push(
+            `<span>${typeEffectivenessChart[type].icon}</span>`
+          );
+        }
+      }
+      if (resistances.length > 0) {
+        buf += `<p>Resistances: ${resistances.join(' ')}</p>`;
+      }
+
+      //immunities
+      let immunities = [];
+      for (let type in typeEffectivenessChart) {
+        let effectiveness = typeEffectivenessChart[type][type1] * (type2 ? typeEffectivenessChart[type][type2] : 1);
+        if (effectiveness === 0) {
+          immunities.push(
+            `<span>${typeEffectivenessChart[type].icon}</span>`
+          );
+        }
+      }
+      if (immunities.length > 0) {
+        buf += `<p>Immunities: ${immunities.join(' ')}</p>`;
+      }
+    }
+
+
+
+
+    text += buf;
   }
 
 
@@ -416,7 +587,9 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
   let [moveType, category] = this.getMoveType(move, value, gmaxMove || isZOrMax === 'maxmove');
   let categoryDiff = move.category !== category;
 
-  text += '<hr style="border: 1px solid black; margin: 5px 0;">';
+  let buf = '';
+
+  buf += '<hr style="border: 1px solid black; margin: 5px 0;">';
 
   // text += '<h2>' + move.name + '<br />';
 
@@ -446,8 +619,9 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
   //turn into percentage
   damageRange[0] = (damageRange[0] / foeStats.hp * 100).toFixed(1);
   damageRange[1] = (damageRange[1] / foeStats.hp * 100).toFixed(1);
-  text += damageRange[0] + "% - " + damageRange[1] + "%";
+  buf += damageRange[0] + "% - " + damageRange[1] + "%";
 
+  text += buf;
 
   return text;
 }
@@ -489,6 +663,25 @@ ShowdownEnhancedTooltip.showMoveTooltip = function showMoveTooltip(move, isZOrMa
 //   "Dark": {
 
 
+
+
+
+//if I can get var BattleRoom = this.BattleRoom = ConsoleRoom.extend({
+//		forfeit: function () {
+		// 	this.send('/forfeit');
+		// },
+// then I can use the showdown commands like /dt sunny day ect
+
+//use ShowdownEnhancedTooltip.BattleTypeChart
+// ShowdownEnhancedTooltip.BattleTypeChart = {
+//   // defending type
+//   "Bug": {
+//     damageGiven: {
+//       // attacking type : effectivenessMultiplier
+//       "Bug": 1,
+//       "Dark": 1,
+//       "Dragon": 1,
+
 const typeEffectivenessChart = {
   "Normal": {
     "Normal": 1,
@@ -508,7 +701,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Normal.png" alt="Normal" height="14" width="32" class="pixelated">'
   },
   "Fire": {
     "Normal": 1,
@@ -528,7 +722,8 @@ const typeEffectivenessChart = {
     "Dragon": 0.5,
     "Dark": 1,
     "Steel": 2,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Fire.png" alt="Fire" height="14" width="32" class="pixelated">'
   },
   "Water": {
     "Normal": 1,
@@ -548,7 +743,8 @@ const typeEffectivenessChart = {
     "Dragon": 0.5,
     "Dark": 1,
     "Steel": 1,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Water.png" alt="Water" height="14" width="32" class="pixelated">'
   },
   "Electric": {
     "Normal": 1,
@@ -568,7 +764,8 @@ const typeEffectivenessChart = {
     "Dragon": 0.5,
     "Dark": 1,
     "Steel": 1,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Electric.png" alt="Electric" height="14" width="32" class="pixelated">'
   },
   "Grass": {
     "Normal": 1,
@@ -588,7 +785,8 @@ const typeEffectivenessChart = {
     "Dragon": 0.5,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Grass.png" alt="Grass" height="14" width="32" class="pixelated">'
   },
   "Ice": {
     "Normal": 1,
@@ -608,7 +806,8 @@ const typeEffectivenessChart = {
     "Dragon": 2,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Ice.png" alt="Ice" height="14" width="32" class="pixelated">'
   },
   "Fighting": {
     "Normal": 2,
@@ -628,7 +827,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 2,
     "Steel": 2,
-    "Fairy": 0.5
+    "Fairy": 0.5,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Fighting.png" alt="Fighting" height="14" width="32" class="pixelated">'
   },
   "Poison": {
     "Normal": 1,
@@ -648,7 +848,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 1,
     "Steel": 0,
-    "Fairy": 2
+    "Fairy": 2,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Poison.png" alt="Poison" height="14" width="32" class="pixelated">'
   },
   "Ground": {
     "Normal": 1,
@@ -668,7 +869,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 1,
     "Steel": 2,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Ground.png" alt="Ground" height="14" width="32" class="pixelated">'
   },
   "Flying": {
     "Normal": 1,
@@ -688,7 +890,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Flying.png" alt="Flying" height="14" width="32" class="pixelated">'
   },
   "Psychic": {
     "Normal": 1,
@@ -708,7 +911,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 0,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Psychic.png" alt="Psychic" height="14" width="32" class="pixelated">'
   },
   "Bug": {
     "Normal": 1,
@@ -728,7 +932,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 2,
     "Steel": 0.5,
-    "Fairy": 0.5
+    "Fairy": 0.5,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Bug.png" alt="Bug" height="14" width="32" class="pixelated">'
   },
   "Rock": {
     "Normal": 1,
@@ -748,7 +953,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Rock.png" alt="Rock" height="14" width="32" class="pixelated">'
   },
   "Ghost": {
     "Normal": 0,
@@ -768,7 +974,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 0.5,
     "Steel": 1,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Ghost.png" alt="Ghost" height="14" width="32" class="pixelated">'
   },
   "Dragon": {
     "Normal": 1,
@@ -788,7 +995,8 @@ const typeEffectivenessChart = {
     "Dragon": 2,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 0
+    "Fairy": 0,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Dragon.png" alt="Dragon" height="14" width="32" class="pixelated">'
   },
   "Dark": {
     "Normal": 1,
@@ -808,7 +1016,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 0.5,
     "Steel": 1,
-    "Fairy": 0.5
+    "Fairy": 0.5,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Dark.png" alt="Dark" height="14" width="32" class="pixelated">'
   },
   "Steel": {
     "Normal": 1,
@@ -828,7 +1037,8 @@ const typeEffectivenessChart = {
     "Dragon": 1,
     "Dark": 1,
     "Steel": 0.5,
-    "Fairy": 2
+    "Fairy": 2,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Steel.png" alt="Steel" height="14" width="32" class="pixelated">'
   },
   "Fairy": {
     "Normal": 1,
@@ -848,10 +1058,96 @@ const typeEffectivenessChart = {
     "Dragon": 2,
     "Dark": 2,
     "Steel": 0.5,
-    "Fairy": 1
+    "Fairy": 1,
+    "icon": '<img src="https://play.pokemonshowdown.com/sprites/types/Fairy.png" alt="Fairy" height="14" width="32" class="pixelated">'
   }
 };
 
 
 BattleTooltips.prototype.showPokemonTooltip = ShowdownEnhancedTooltip.showPokemonTooltip;
 BattleTooltips.prototype.showMoveTooltip = ShowdownEnhancedTooltip.showMoveTooltip;
+
+//BattleTooltips.prototype
+
+// {lockTooltip: ƒ, handleTouchEnd: ƒ, listen: ƒ, showTooltip: ƒ, placeTooltip: ƒ, …}
+// calculateModifiedStats
+// : 
+// ƒ calculateModifiedStats(clientPokemon,serverPokemon,statStagesOnly)
+// getAllyAbility
+// : 
+// ƒ getAllyAbility(ally)
+// getItemBoost
+// : 
+// ƒ getItemBoost(move,value,moveType)
+// getMaxMoveFromType
+// : 
+// ƒ getMaxMoveFromType(type,gmaxMove)
+// getMoveAccuracy
+// : 
+// ƒ getMoveAccuracy(move,value,target)
+// getMoveBasePower
+// : 
+// ƒ getMoveBasePower(move,moveType,value)
+// getMoveType
+// : 
+// ƒ getMoveType( move,value,forMaxMove)
+// getPPUseText
+// : 
+// ƒ getPPUseText(moveTrackRow,showKnown)
+// getPokemonAbilityData
+// : 
+// ƒ getPokemonAbilityData(clientPokemon,serverPokemon)
+// getPokemonAbilityText
+// : 
+// ƒ getPokemonAbilityText( clientPokemon, serverPokemon, isActive, hidePossible)
+// getPokemonTypes
+// : 
+// ƒ getPokemonTypes(pokemon)
+// getSpeedRange
+// : 
+// ƒ getSpeedRange(pokemon)
+// getStatusZMoveEffect
+// : 
+// ƒ getStatusZMoveEffect(move)
+// handleTouchEnd
+// : 
+// ƒ handleTouchEnd(e)
+// hideTooltip
+// : 
+// ƒ hideTooltip()
+// listen
+// : 
+// ƒ listen(elem)
+// lockTooltip
+// : 
+// ƒ lockTooltip()
+// placeTooltip
+// : 
+// ƒ placeTooltip(innerHTML,hoveredElem,notRelativeToParent,type)
+// pokemonHasClones
+// : 
+// ƒ pokemonHasClones(pokemon)
+// pokemonHasType
+// : 
+// ƒ pokemonHasType(pokemon,type,types)
+// ppUsed
+// : 
+// ƒ ppUsed(move,pokemon)
+// renderStats
+// : 
+// ƒ renderStats(clientPokemon,serverPokemon,short)
+// showFieldTooltip
+// : 
+// ƒ showFieldTooltip()
+// showMoveTooltip
+// : 
+// ƒ showMoveTooltip(move, isZOrMax, pokemon, serverPokemon, gmaxMove)
+// showPokemonTooltip
+// : 
+// ƒ showPokemonTooltip(clientPokemon, serverPokemon, isActive, illusionIndex)
+// showTooltip
+// : 
+// ƒ showTooltip(elem)
+// constructor
+// : 
+// ƒ BattleTooltips(battle)
